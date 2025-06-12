@@ -9,6 +9,13 @@ import Foundation
 import AppKit
 import UniformTypeIdentifiers
 
+// MARK: - UTType Extensions for FLAC support
+extension UTType {
+    static var flac: UTType {
+        UTType(filenameExtension: "flac") ?? UTType.audio
+    }
+}
+
 class PlaylistManager: ObservableObject {
     @Published var playlists: [Playlist] = []
     @Published var selectedPlaylist: Playlist?
@@ -55,7 +62,7 @@ class PlaylistManager: ObservableObject {
         openPanel.allowsMultipleSelection = true
         openPanel.canChooseDirectories = false
         openPanel.canChooseFiles = true
-        openPanel.allowedContentTypes = [.audio, .mp3, .wav, .aiff, .mpeg4Audio]
+        openPanel.allowedContentTypes = [.audio, .mp3, .wav, .aiff, .mpeg4Audio, .flac]
         
         if openPanel.runModal() == .OK {
             let tracks = openPanel.urls.compactMap { url -> Track? in
