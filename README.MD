@@ -132,4 +132,5 @@ A beautiful, modern music player for macOS built with SwiftUI.
 
 ## TODO:
 - Fix thumbnail extraction for better album art display
+- thumbnail animation
 - allow to search tracks

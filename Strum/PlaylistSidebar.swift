@@ -80,7 +80,7 @@ struct PlaylistSidebar: View {
                             .fontWeight(.bold)
                             .foregroundStyle(
                                 LinearGradient(
-                                    colors: [.primary, DesignSystem.colors(for: colorTheme).primary.opacity(0.8)],
+                                    colors: colorTheme.gradientColors,
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -203,7 +203,7 @@ struct PlaylistSidebar: View {
                                     .fontWeight(.bold)
                                     .foregroundStyle(
                                         LinearGradient(
-                                            colors: [.primary, DesignSystem.colors(for: colorTheme).primary],
+                                            colors: colorTheme.gradientColors,
                                             startPoint: .leading,
                                             endPoint: .trailing
                                         )
@@ -228,8 +228,11 @@ struct PlaylistSidebar: View {
         )
         .background(
             ZStack {
-                DesignSystem.colors(for: colorTheme).sidebarBackground
-                colorTheme.backgroundTint.opacity(0.3)
+                // Base background
+                Color(NSColor.controlBackgroundColor)
+
+                // Consistent themed gradient overlay
+                DesignSystem.colors(for: colorTheme).sectionBackground
             }
         )
         .onDrop(of: [.fileURL], isTargeted: $isDragOver) { providers in

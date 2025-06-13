@@ -180,6 +180,19 @@ extension DesignSystem {
         }
         var sidebarSelection: Color { theme.primaryColor.opacity(0.12) }
         var sidebarHover: Color { theme.primaryColor.opacity(0.05) }
+
+        // Consistent section backgrounds with subtle theme gradient
+        var sectionBackground: LinearGradient {
+            LinearGradient(
+                colors: [
+                    theme.gradientColors[0].opacity(0.03),
+                    theme.gradientColors[1].opacity(0.02),
+                    theme.gradientColors[0].opacity(0.03)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
     }
     
     static func colors(for theme: ColorTheme) -> ThemedColors {
@@ -217,13 +230,15 @@ struct ThemedIconButtonStyle: ButtonStyle {
     let size: CGFloat
     let isActive: Bool
     let theme: ColorTheme
-    
-    init(size: CGFloat = 32, isActive: Bool = false, theme: ColorTheme = .blue) {
+    let useGradient: Bool
+
+    init(size: CGFloat = 32, isActive: Bool = false, theme: ColorTheme = .blue, useGradient: Bool = false) {
         self.size = size
         self.isActive = isActive
         self.theme = theme
+        self.useGradient = useGradient
     }
-    
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: size * 0.5))
@@ -231,7 +246,15 @@ struct ThemedIconButtonStyle: ButtonStyle {
             .frame(width: size, height: size)
             .background(
                 Circle()
-                    .fill(isActive ? theme.primaryColor : DesignSystem.colors(for: theme).hoverBackground)
+                    .fill(
+                        isActive && useGradient ?
+                        AnyShapeStyle(LinearGradient(
+                            colors: theme.gradientColors,
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )) :
+                        AnyShapeStyle(isActive ? theme.primaryColor : DesignSystem.colors(for: theme).hoverBackground)
+                    )
                     .opacity(configuration.isPressed ? 0.8 : 1.0)
             )
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)

@@ -59,7 +59,7 @@ struct ContentView: View {
                                         .fontWeight(.bold)
                                         .foregroundStyle(
                                             LinearGradient(
-                                                colors: [.primary, DesignSystem.colors(for: colorTheme).primary.opacity(0.8)],
+                                                colors: colorTheme.gradientColors,
                                                 startPoint: .leading,
                                                 endPoint: .trailing
                                             )
@@ -134,7 +134,7 @@ struct ContentView: View {
                                         .fontWeight(.bold)
                                         .foregroundStyle(
                                             LinearGradient(
-                                                colors: [.primary, DesignSystem.colors(for: colorTheme).primary.opacity(0.8)],
+                                                colors: colorTheme.gradientColors,
                                                 startPoint: .leading,
                                                 endPoint: .trailing
                                             )

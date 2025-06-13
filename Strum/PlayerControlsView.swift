@@ -15,8 +15,6 @@ struct PlayerControlsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Divider()
-
             Group {
                 if isCompact {
                     // Compact Layout: Vertical stack for smaller screens
@@ -114,7 +112,7 @@ struct PlayerControlsView: View {
                                     Image(systemName: musicPlayer.playerState == .playing ? "pause.fill" : "play.fill")
                                         .foregroundColor(.white)
                                 }
-                                .buttonStyle(ThemedIconButtonStyle(size: 44, isActive: true, theme: colorTheme))
+                                .buttonStyle(ThemedIconButtonStyle(size: 44, isActive: true, theme: colorTheme, useGradient: true))
                                 .disabled(musicPlayer.currentTrack == nil && playlistManager.selectedPlaylist?.tracks.isEmpty != false)
 
                                 Button(action: {
@@ -232,7 +230,7 @@ struct PlayerControlsView: View {
                                         Image(systemName: musicPlayer.playerState == .playing ? "pause.fill" : "play.fill")
                                             .foregroundColor(.white)
                                     }
-                                    .buttonStyle(ThemedIconButtonStyle(size: 52, isActive: true, theme: colorTheme))
+                                    .buttonStyle(ThemedIconButtonStyle(size: 52, isActive: true, theme: colorTheme, useGradient: true))
                                     .disabled(musicPlayer.currentTrack == nil && playlistManager.selectedPlaylist?.tracks.isEmpty != false)
 
                                     Button(action: {
@@ -285,26 +283,20 @@ struct PlayerControlsView: View {
             .padding(.vertical, isCompact ? DesignSystem.Spacing.md : DesignSystem.Spacing.xl)
             .background(
                 ZStack {
-                    // Subtle transparent background that works with global blur
-                    Rectangle()
-                        .fill(.thinMaterial)
-                        .opacity(0.5)
+                    // Base background
+                    Color(NSColor.controlBackgroundColor)
 
-                    // Very subtle themed overlay
-                    Rectangle()
-                        .fill(colorTheme.surfaceTint)
-                        .opacity(0.1)
-
-                    // Subtle shadow for depth
-                    Rectangle()
-                        .fill(Color.clear)
-                        .shadow(color: DesignSystem.Shadow.light, radius: 4, x: 0, y: -1)
+                    // Consistent themed gradient overlay
+                    DesignSystem.colors(for: colorTheme).sectionBackground
                 }
+                .shadow(color: DesignSystem.Shadow.light, radius: 4, x: 0, y: -1)
             )
         }
         .frame(height: isCompact ? 160 : 120) // Standard height for single row layout
     }
-    
+
+    // MARK: - Helper Views
+
     private func formatTime(_ time: TimeInterval) -> String {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60

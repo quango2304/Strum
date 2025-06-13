@@ -14,40 +14,99 @@ struct TrackListView: View {
     @State private var selectedTrack: Track?
     @State private var isDragOver = false
     @State private var animationTrigger = false
+    @State private var searchText = ""
 
     // We need access to PlaylistManager to save changes
     @EnvironmentObject var playlistManager: PlaylistManager
     @Environment(\.colorTheme) private var colorTheme
-    
+
+    // Helper function to normalize text for search (remove diacritics, special chars, lowercase)
+    private func normalizeForSearch(_ text: String) -> String {
+        return text
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .joined()
+            .lowercased()
+    }
+
+    // Computed property to filter tracks based on search text
+    private var filteredTracks: [Track] {
+        if searchText.isEmpty {
+            return playlist.tracks
+        } else {
+            let normalizedSearch = normalizeForSearch(searchText)
+            return playlist.tracks.filter { track in
+                normalizeForSearch(track.title).contains(normalizedSearch) ||
+                normalizeForSearch(track.artist ?? "").contains(normalizedSearch) ||
+                normalizeForSearch(track.album ?? "").contains(normalizedSearch)
+            }
+        }
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
+        GeometryReader { geometry in
+            let isCompact = geometry.size.width < 1000
+
+            VStack(spacing: 0) {
+            // Header with beautiful title and search in same row
+            HStack(spacing: DesignSystem.Spacing.lg) {
+                // Left side: Beautiful artistic playlist title
                 Text(playlist.name)
-                    .font(DesignSystem.Typography.title2)
-                    .foregroundColor(.primary)
+                    .font(.custom("Brush Script MT", size: 32))
+                    .fontWeight(.medium)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: colorTheme.gradientColors,
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
 
                 Spacer()
 
-                Text("\(playlist.tracks.count) song\(playlist.tracks.count == 1 ? "" : "s")")
-                    .font(DesignSystem.Typography.callout)
-                    .foregroundColor(.secondary)
+                // Right side: Beautiful search field
+                HStack(spacing: DesignSystem.Spacing.sm) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
+                        .font(.system(size: 16, weight: .medium))
+
+                    TextField("Search tracks, artists, albums...", text: $searchText)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .font(DesignSystem.Typography.body)
+                        .foregroundColor(.primary)
+
+                    if !searchText.isEmpty {
+                        Button(action: {
+                            searchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                                .font(.system(size: 14))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .transition(.scale.combined(with: .opacity))
+                    }
+                }
+                .padding(.horizontal, DesignSystem.Spacing.md)
+                .padding(.vertical, DesignSystem.Spacing.sm)
+                .background(
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
+                                .stroke(
+                                    searchText.isEmpty ?
+                                    Color.clear :
+                                    DesignSystem.colors(for: colorTheme).primary.opacity(0.3),
+                                    lineWidth: 1
+                                )
+                        )
+                )
+                .animation(.easeInOut(duration: 0.2), value: searchText.isEmpty)
             }
             .padding(.horizontal, DesignSystem.Spacing.xl)
             .padding(.vertical, DesignSystem.Spacing.lg)
-            .background(
-                ZStack {
-                    // Subtle transparent background
-                    Rectangle()
-                        .fill(.ultraThinMaterial)
-                        .opacity(0.3)
-
-                    // Very subtle color tint
-                    Rectangle()
-                        .fill(colorTheme.surfaceTint)
-                        .opacity(0.1)
-                }
-            )
             
             Divider()
             
@@ -57,22 +116,39 @@ struct TrackListView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .frame(width: 30, alignment: .center)
-                
+
                 Text("Title")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Text("Artist")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .frame(width: 150, alignment: .leading)
-                
-                Text("Album")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .frame(width: 150, alignment: .leading)
-                
+
+                if !isCompact {
+                    Text("Artist")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(width: 150, alignment: .leading)
+
+                    Text("Album")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(width: 150, alignment: .leading)
+
+                    Text("Quality")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(width: 100, alignment: .leading)
+                } else {
+                    Text("Artist")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(width: 120, alignment: .leading)
+
+                    Text("Quality")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(width: 80, alignment: .leading)
+                }
+
                 Text("Duration")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -80,7 +156,6 @@ struct TrackListView: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 8)
-            .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
             
             Divider()
             
@@ -104,7 +179,7 @@ struct TrackListView: View {
                             .fontWeight(.bold)
                             .foregroundStyle(
                                 LinearGradient(
-                                    colors: [.primary, DesignSystem.colors(for: colorTheme).primary.opacity(0.8)],
+                                    colors: colorTheme.gradientColors,
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -126,54 +201,87 @@ struct TrackListView: View {
                     animationTrigger = true
                 }
             } else {
-                List {
-                    ForEach(Array(playlist.tracks.enumerated()), id: \.element.id) { index, track in
-                        TrackRow(
-                            track: track,
-                            trackNumber: index + 1,
-                            isPlaying: musicPlayer.currentTrack?.id == track.id && musicPlayer.playerState == .playing,
-                            isPaused: musicPlayer.currentTrack?.id == track.id && musicPlayer.playerState == .paused,
-                            colorTheme: colorTheme
-                        ) {
-                            musicPlayer.play(track: track, in: playlist)
+                // Track list area with consistent background
+                ZStack {
+                    if filteredTracks.isEmpty {
+                        // No search results state
+                        VStack(spacing: DesignSystem.Spacing.xl) {
+                            Spacer()
+
+                            // Animated search icon with theme-aware gradient
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 64, weight: .light))
+                                .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
+                                .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 8, x: 0, y: 4)
+                                .scaleEffect(animationTrigger ? 1.05 : 1.0)
+                                .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: animationTrigger)
+
+                            VStack(spacing: DesignSystem.Spacing.md) {
+                                Text("No Results Found")
+                                    .font(DesignSystem.Typography.title2)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: colorTheme.gradientColors,
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .multilineTextAlignment(.center)
+
+                                Text("No tracks match \"\(searchText)\"")
+                                    .font(DesignSystem.Typography.callout)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .opacity(0.8)
+                                    .padding(.horizontal, DesignSystem.Spacing.xl)
+                            }
+
+                            Spacer()
                         }
-                    }
-                    .onMove { source, destination in
-                        playlist.moveTrack(from: source, to: destination)
-                    }
-                    .onDelete { indexSet in
-                        for index in indexSet {
-                            playlist.removeTrack(at: index)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        List {
+                            ForEach(Array(filteredTracks.enumerated()), id: \.element.id) { index, track in
+                                TrackRow(
+                                    track: track,
+                                    trackNumber: playlist.tracks.firstIndex(where: { $0.id == track.id })! + 1,
+                                    isPlaying: musicPlayer.currentTrack?.id == track.id && musicPlayer.playerState == .playing,
+                                    isPaused: musicPlayer.currentTrack?.id == track.id && musicPlayer.playerState == .paused,
+                                    colorTheme: colorTheme,
+                                    isCompact: isCompact
+                                ) {
+                                    musicPlayer.play(track: track, in: playlist)
+                                }
+                            }
+                            .onMove { source, destination in
+                                // Only allow move operations when not filtering
+                                if searchText.isEmpty {
+                                    playlist.moveTrack(from: source, to: destination)
+                                }
+                            }
+                            .onDelete { indexSet in
+                                // Handle deletion with filtered tracks
+                                for index in indexSet {
+                                    let trackToDelete = filteredTracks[index]
+                                    if let originalIndex = playlist.tracks.firstIndex(where: { $0.id == trackToDelete.id }) {
+                                        playlist.removeTrack(at: originalIndex)
+                                    }
+                                }
+                            }
                         }
+                        .listStyle(PlainListStyle())
                     }
                 }
-                .listStyle(PlainListStyle())
-                .background(
-                    // Very subtle background for track list
-                    ZStack {
-                        Rectangle()
-                            .fill(.ultraThinMaterial)
-                            .opacity(0.2)
-
-                        // Minimal gradient
-                        Rectangle()
-                            .fill(colorTheme.surfaceTint)
-                            .opacity(0.05)
-                    }
-                )
             }
         }
         .background(
-            // Minimal container background that works with global blur
             ZStack {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .opacity(0.2)
+                // Base background
+                Color(NSColor.controlBackgroundColor)
 
-                // Very subtle themed overlay
-                Rectangle()
-                    .fill(colorTheme.surfaceTint)
-                    .opacity(0.03)
+                // Consistent themed gradient overlay
+                DesignSystem.colors(for: colorTheme).sectionBackground
             }
         )
         .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg))
@@ -213,7 +321,7 @@ struct TrackListView: View {
                                     .fontWeight(.bold)
                                     .foregroundStyle(
                                         LinearGradient(
-                                            colors: [.primary, DesignSystem.colors(for: colorTheme).primary],
+                                            colors: colorTheme.gradientColors,
                                             startPoint: .leading,
                                             endPoint: .trailing
                                         )
@@ -238,6 +346,7 @@ struct TrackListView: View {
         )
         .onDrop(of: [.fileURL], isTargeted: $isDragOver) { providers in
             return handleDrop(providers: providers)
+        }
         }
     }
 
@@ -341,6 +450,7 @@ struct TrackRow: View {
     let isPlaying: Bool
     let isPaused: Bool
     let colorTheme: ColorTheme
+    let isCompact: Bool
     let onPlay: () -> Void
 
     @State private var isHovered = false
@@ -401,19 +511,39 @@ struct TrackRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .foregroundColor(isPlaying || isPaused ? colorTheme.primaryColor : .primary)
 
-            // Artist
-            Text(track.artist ?? "Unknown Artist")
-                .font(DesignSystem.Typography.trackSubtitle)
-                .lineLimit(1)
-                .frame(width: 150, alignment: .leading)
-                .foregroundColor(.secondary)
+            if !isCompact {
+                // Full size mode: Artist, Album, Quality, Duration
+                Text(track.artist ?? "Unknown Artist")
+                    .font(DesignSystem.Typography.trackSubtitle)
+                    .lineLimit(1)
+                    .frame(width: 150, alignment: .leading)
+                    .foregroundColor(.secondary)
 
-            // Album
-            Text(track.album ?? "Unknown Album")
-                .font(DesignSystem.Typography.trackSubtitle)
-                .lineLimit(1)
-                .frame(width: 150, alignment: .leading)
-                .foregroundColor(.secondary)
+                Text(track.album ?? "Unknown Album")
+                    .font(DesignSystem.Typography.trackSubtitle)
+                    .lineLimit(1)
+                    .frame(width: 150, alignment: .leading)
+                    .foregroundColor(.secondary)
+
+                Text(track.qualityString)
+                    .font(DesignSystem.Typography.trackSubtitle)
+                    .lineLimit(1)
+                    .frame(width: 100, alignment: .leading)
+                    .foregroundColor(.secondary)
+            } else {
+                // Compact mode: Artist, Quality
+                Text(track.artist ?? "Unknown Artist")
+                    .font(DesignSystem.Typography.trackSubtitle)
+                    .lineLimit(1)
+                    .frame(width: 120, alignment: .leading)
+                    .foregroundColor(.secondary)
+
+                Text(track.qualityString)
+                    .font(DesignSystem.Typography.trackSubtitle)
+                    .lineLimit(1)
+                    .frame(width: 80, alignment: .leading)
+                    .foregroundColor(.secondary)
+            }
 
             // Duration
             Text(formatDuration(track.duration))

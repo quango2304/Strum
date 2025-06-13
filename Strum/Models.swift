@@ -21,6 +21,8 @@ struct Track: Identifiable, Codable, Hashable {
     let trackNumber: Int?
     let artworkData: Data?
     let bookmarkData: Data?
+    let fileFormat: String
+    let bitrate: Int? // in kbps
     
     init(url: URL) {
         self.url = url
@@ -159,6 +161,21 @@ struct Track: Identifiable, Codable, Hashable {
             }
         }
 
+        // Extract file format and quality information
+        let fileExtension = url.pathExtension.uppercased()
+        self.fileFormat = fileExtension
+
+        // Extract bitrate from audio tracks
+        var extractedBitrate: Int?
+        let audioTracks = asset.tracks(withMediaType: .audio)
+        if let audioTrack = audioTracks.first {
+            let bitrate = audioTrack.estimatedDataRate
+            if bitrate > 0 {
+                extractedBitrate = Int(bitrate / 1000) // Convert to kbps
+            }
+        }
+        self.bitrate = extractedBitrate
+
         // Set final values
         self.title = extractedTitle ?? filename
         self.artist = extractedArtist
@@ -213,6 +230,21 @@ struct Track: Identifiable, Codable, Hashable {
         let image = NSImage(data: artworkData)
         print("🎵 Created NSImage for \(title): \(image != nil ? "SUCCESS" : "FAILED") from \(artworkData.count) bytes")
         return image
+    }
+
+    // Helper property to get formatted quality string
+    var qualityString: String {
+        var components: [String] = []
+
+        // Add file format
+        components.append(fileFormat)
+
+        // Add bitrate if available
+        if let bitrate = bitrate {
+            components.append("\(bitrate)k")
+        }
+
+        return components.joined(separator: " • ")
     }
 
     // Helper method to resolve URL from security-scoped bookmark
