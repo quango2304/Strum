@@ -13,6 +13,7 @@ struct TrackListView: View {
     @ObservedObject var musicPlayer: MusicPlayerManager
     @State private var selectedTrack: Track?
     @State private var isDragOver = false
+    @State private var animationTrigger = false
 
     // We need access to PlaylistManager to save changes
     @EnvironmentObject var playlistManager: PlaylistManager
@@ -85,20 +86,45 @@ struct TrackListView: View {
             
             // Track List
             if playlist.tracks.isEmpty {
-                VStack(spacing: 16) {
+                // Beautiful themed empty state
+                VStack(spacing: DesignSystem.Spacing.xl) {
+                    Spacer()
+
+                    // Animated music icon with theme-aware gradient
                     Image(systemName: "music.note")
-                        .font(.system(size: 48))
-                        .foregroundColor(.secondary)
-                    
-                    Text("No songs in this playlist")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    Text("Import music files or folders to get started")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 64, weight: .light))
+                        .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
+                        .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 8, x: 0, y: 4)
+                        .scaleEffect(animationTrigger ? 1.05 : 1.0)
+                        .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: animationTrigger)
+
+                    VStack(spacing: DesignSystem.Spacing.md) {
+                        Text("No Songs in \"\(playlist.name)\"")
+                            .font(DesignSystem.Typography.title2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.primary, DesignSystem.colors(for: colorTheme).primary.opacity(0.8)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .multilineTextAlignment(.center)
+
+                        Text("Drag and drop music files or folders here to add them to this playlist")
+                            .font(DesignSystem.Typography.callout)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .opacity(0.8)
+                            .padding(.horizontal, DesignSystem.Spacing.xl)
+                    }
+
+                    Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onAppear {
+                    animationTrigger = true
+                }
             } else {
                 List {
                     ForEach(Array(playlist.tracks.enumerated()), id: \.element.id) { index, track in
@@ -171,37 +197,33 @@ struct TrackListView: View {
                         .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 0))
 
-                        // Content with beautiful styling
-                        VStack(spacing: 20) {
-                            // Animated music icon
+                        // Content with beautiful themed styling
+                        VStack(spacing: DesignSystem.Spacing.xl) {
+                            // Animated themed music icon
                             Image(systemName: "music.note.list")
                                 .font(.system(size: 72, weight: .medium))
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [.blue, .cyan],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                                .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
+                                .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.4), radius: 12, x: 0, y: 6)
+                                .scaleEffect(isDragOver ? 1.1 : 1.0)
+                                .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: isDragOver)
 
-                            VStack(spacing: 12) {
+                            VStack(spacing: DesignSystem.Spacing.md) {
                                 Text("Drop Music Here")
-                                    .font(.title)
+                                    .font(DesignSystem.Typography.title)
                                     .fontWeight(.bold)
                                     .foregroundStyle(
                                         LinearGradient(
-                                            colors: [.primary, .blue],
+                                            colors: [.primary, DesignSystem.colors(for: colorTheme).primary],
                                             startPoint: .leading,
                                             endPoint: .trailing
                                         )
                                     )
 
                                 Text("Add files or folders to \"\(playlist.name)\"")
-                                    .font(.headline)
+                                    .font(DesignSystem.Typography.headline)
                                     .foregroundColor(.secondary)
                                     .multilineTextAlignment(.center)
-                                    .opacity(0.8)
+                                    .opacity(0.9)
                             }
                         }
                         .padding(40)
@@ -405,7 +427,7 @@ struct TrackRow: View {
         .onHover { hovering in
             isHovered = hovering
         }
-        .onTapGesture(count: 2) {
+        .onTapGesture {
             onPlay()
         }
         .background(

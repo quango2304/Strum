@@ -9,6 +9,7 @@ import SwiftUI
 
 struct PlayerControlsView: View {
     @ObservedObject var musicPlayer: MusicPlayerManager
+    @ObservedObject var playlistManager: PlaylistManager
     let isCompact: Bool
     @Environment(\.colorTheme) private var colorTheme
 
@@ -104,14 +105,17 @@ struct PlayerControlsView: View {
                                     case .paused:
                                         musicPlayer.resume()
                                     case .stopped:
-                                        break
+                                        // If no current track, play first track from selected playlist
+                                        if let selectedPlaylist = playlistManager.selectedPlaylist {
+                                            musicPlayer.playFirstTrack(in: selectedPlaylist)
+                                        }
                                     }
                                 }) {
                                     Image(systemName: musicPlayer.playerState == .playing ? "pause.fill" : "play.fill")
                                         .foregroundColor(.white)
                                 }
                                 .buttonStyle(ThemedIconButtonStyle(size: 44, isActive: true, theme: colorTheme))
-                                .disabled(musicPlayer.currentTrack == nil)
+                                .disabled(musicPlayer.currentTrack == nil && playlistManager.selectedPlaylist?.tracks.isEmpty != false)
 
                                 Button(action: {
                                     musicPlayer.nextTrack()
@@ -219,14 +223,17 @@ struct PlayerControlsView: View {
                                         case .paused:
                                             musicPlayer.resume()
                                         case .stopped:
-                                            break
+                                            // If no current track, play first track from selected playlist
+                                            if let selectedPlaylist = playlistManager.selectedPlaylist {
+                                                musicPlayer.playFirstTrack(in: selectedPlaylist)
+                                            }
                                         }
                                     }) {
                                         Image(systemName: musicPlayer.playerState == .playing ? "pause.fill" : "play.fill")
                                             .foregroundColor(.white)
                                     }
                                     .buttonStyle(ThemedIconButtonStyle(size: 52, isActive: true, theme: colorTheme))
-                                    .disabled(musicPlayer.currentTrack == nil)
+                                    .disabled(musicPlayer.currentTrack == nil && playlistManager.selectedPlaylist?.tracks.isEmpty != false)
 
                                     Button(action: {
                                         musicPlayer.nextTrack()
@@ -481,6 +488,6 @@ struct ThemedSlider: View {
 }
 
 #Preview {
-    PlayerControlsView(musicPlayer: MusicPlayerManager(), isCompact: false)
+    PlayerControlsView(musicPlayer: MusicPlayerManager(), playlistManager: PlaylistManager(), isCompact: false)
         .frame(width: 800)
 }

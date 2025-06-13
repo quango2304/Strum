@@ -19,6 +19,7 @@ struct PlaylistSidebar: View {
     @Binding var pendingFiles: [URL]
     let isCompact: Bool
     @State private var isDragOver = false
+    @State private var animationTrigger = false
     @Environment(\.colorTheme) private var colorTheme
 
     var body: some View {
@@ -61,59 +62,76 @@ struct PlaylistSidebar: View {
 
             // Playlist List or Empty State
             if playlistManager.playlists.isEmpty {
-                // Beautiful empty state
-                VStack(spacing: 20) {
+                // Beautiful themed empty state
+                VStack(spacing: DesignSystem.Spacing.xl) {
                     Spacer()
 
+                    // Animated icon with theme-aware gradient
                     Image(systemName: "music.note.list")
-                        .font(.system(size: 64, weight: .light))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.blue.opacity(0.7), .cyan.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .font(.system(size: 72, weight: .light))
+                        .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
+                        .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 8, x: 0, y: 4)
+                        .scaleEffect(animationTrigger ? 1.05 : 1.0)
+                        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animationTrigger)
 
-                    VStack(spacing: 12) {
+                    VStack(spacing: DesignSystem.Spacing.md) {
                         Text("No Playlists")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
+                            .font(DesignSystem.Typography.title2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.primary, DesignSystem.colors(for: colorTheme).primary.opacity(0.8)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
 
                         Text("Create your first playlist to get started")
-                            .font(.subheadline)
+                            .font(DesignSystem.Typography.callout)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
+                            .opacity(0.8)
                     }
 
+                    // Beautiful themed button
                     Button(action: {
                         showingAddPlaylistPopup = true
                         newPlaylistName = ""
                     }) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: DesignSystem.Spacing.sm) {
                             Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 18, weight: .medium))
                             Text("Create Playlist")
+                                .font(.system(size: 16, weight: .semibold))
                         }
-                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
+                        .padding(.horizontal, DesignSystem.Spacing.xl)
+                        .padding(.vertical, DesignSystem.Spacing.md)
                         .background(
-                            LinearGradient(
-                                colors: [.blue, .cyan],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
+                            ZStack {
+                                // Base gradient background
+                                DesignSystem.colors(for: colorTheme).gradient
+
+                                // Subtle highlight overlay
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.2), Color.clear],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            }
                         )
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg))
+                        .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.4), radius: 8, x: 0, y: 4)
                     }
                     .buttonStyle(PlainButtonStyle())
 
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, DesignSystem.Spacing.xl)
+                .onAppear {
+                    animationTrigger = true
+                }
             } else {
                 List(playlistManager.playlists, id: \.id) { playlist in
                     PlaylistRow(
@@ -169,37 +187,33 @@ struct PlaylistSidebar: View {
                         .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 0))
 
-                        // Content with beautiful styling
-                        VStack(spacing: 20) {
-                            // Dynamic icon based on content type
+                        // Content with beautiful themed styling
+                        VStack(spacing: DesignSystem.Spacing.xl) {
+                            // Dynamic themed icon
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 72, weight: .medium))
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [.blue, .cyan],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                                .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
+                                .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.4), radius: 12, x: 0, y: 6)
+                                .scaleEffect(isDragOver ? 1.1 : 1.0)
+                                .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: isDragOver)
 
-                            VStack(spacing: 12) {
+                            VStack(spacing: DesignSystem.Spacing.md) {
                                 Text("Drop Here")
-                                    .font(.title)
+                                    .font(DesignSystem.Typography.title)
                                     .fontWeight(.bold)
                                     .foregroundStyle(
                                         LinearGradient(
-                                            colors: [.primary, .blue],
+                                            colors: [.primary, DesignSystem.colors(for: colorTheme).primary],
                                             startPoint: .leading,
                                             endPoint: .trailing
                                         )
                                     )
 
                                 Text("Create new playlist with your content")
-                                    .font(.headline)
+                                    .font(DesignSystem.Typography.headline)
                                     .foregroundColor(.secondary)
                                     .multilineTextAlignment(.center)
-                                    .opacity(0.8)
+                                    .opacity(0.9)
                             }
                         }
                         .padding(40)

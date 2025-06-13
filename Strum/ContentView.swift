@@ -22,6 +22,7 @@ struct ContentView: View {
     @State private var showingToast = false
     @State private var toastMessage = ""
     @State private var toastType: ToastView.ToastType = .success
+    @State private var animationTrigger = false
 
     // Responsive breakpoint - switch to vertical layout when width < 1000
     private let responsiveBreakpoint: CGFloat = 1000
@@ -41,20 +42,43 @@ struct ContentView: View {
                                 .environmentObject(playlistManager)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                         } else {
-                            VStack {
-                                Image(systemName: "music.note.list")
-                                    .font(.system(size: 48))
-                                    .foregroundColor(.secondary)
+                            // Beautiful themed empty state for compact layout
+                            VStack(spacing: DesignSystem.Spacing.xl) {
+                                Spacer()
 
-                                Text("Select a playlist to view tracks")
-                                    .font(.headline)
-                                    .foregroundColor(.secondary)
+                                Image(systemName: "music.note.list")
+                                    .font(.system(size: 56, weight: .light))
+                                    .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
+                                    .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 6, x: 0, y: 3)
+                                    .scaleEffect(animationTrigger ? 1.05 : 1.0)
+                                    .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animationTrigger)
+
+                                VStack(spacing: DesignSystem.Spacing.sm) {
+                                    Text("Select a Playlist")
+                                        .font(DesignSystem.Typography.title2)
+                                        .fontWeight(.bold)
+                                        .foregroundStyle(
+                                            LinearGradient(
+                                                colors: [.primary, DesignSystem.colors(for: colorTheme).primary.opacity(0.8)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+
+                                    Text("Choose a playlist from the sidebar to view its tracks")
+                                        .font(DesignSystem.Typography.callout)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                        .opacity(0.8)
+                                }
+
+                                Spacer()
                             }
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
 
                         // Player Controls - Always visible and not cut off
-                        PlayerControlsView(musicPlayer: musicPlayer, isCompact: isCompact)
+                        PlayerControlsView(musicPlayer: musicPlayer, playlistManager: playlistManager, isCompact: isCompact)
 
                         // Playlist Sidebar (at bottom in compact mode)
                         PlaylistSidebar(
@@ -93,14 +117,37 @@ struct ContentView: View {
                             TrackListView(playlist: selectedPlaylist, musicPlayer: musicPlayer)
                                 .environmentObject(playlistManager)
                         } else {
-                            VStack {
-                                Image(systemName: "music.note.list")
-                                    .font(.system(size: 48))
-                                    .foregroundColor(.secondary)
+                            // Beautiful themed empty state for desktop layout
+                            VStack(spacing: DesignSystem.Spacing.xl) {
+                                Spacer()
 
-                                Text("Select a playlist to view tracks")
-                                    .font(.headline)
-                                    .foregroundColor(.secondary)
+                                Image(systemName: "music.note.list")
+                                    .font(.system(size: 72, weight: .light))
+                                    .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
+                                    .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 8, x: 0, y: 4)
+                                    .scaleEffect(animationTrigger ? 1.05 : 1.0)
+                                    .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animationTrigger)
+
+                                VStack(spacing: DesignSystem.Spacing.md) {
+                                    Text("Select a Playlist")
+                                        .font(DesignSystem.Typography.title)
+                                        .fontWeight(.bold)
+                                        .foregroundStyle(
+                                            LinearGradient(
+                                                colors: [.primary, DesignSystem.colors(for: colorTheme).primary.opacity(0.8)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+
+                                    Text("Choose a playlist from the sidebar to view its tracks")
+                                        .font(DesignSystem.Typography.headline)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                        .opacity(0.8)
+                                }
+
+                                Spacer()
                             }
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
@@ -109,7 +156,7 @@ struct ContentView: View {
 
                 // Player Controls - Only for desktop layout (compact has its own)
                 if !isCompact {
-                    PlayerControlsView(musicPlayer: musicPlayer, isCompact: isCompact)
+                    PlayerControlsView(musicPlayer: musicPlayer, playlistManager: playlistManager, isCompact: isCompact)
                 }
             }
         }
@@ -220,12 +267,21 @@ struct AddPlaylistPopup: View {
 
     var body: some View {
         ZStack {
-            // Background overlay with blur
-            DesignSystem.colors(for: colorTheme).overlay
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
+            // Beautiful blur background with material
+            ZStack {
+                // Base dark overlay
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+
+                // Material blur effect
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.8)
+                    .ignoresSafeArea()
+            }
+            .onTapGesture {
+                isPresented = false
+            }
 
             // Popup content
             VStack(spacing: DesignSystem.Spacing.xl) {
@@ -265,7 +321,12 @@ struct AddPlaylistPopup: View {
                     .disabled(playlistName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
-            .cardStyle(padding: DesignSystem.Spacing.xxxl, cornerRadius: DesignSystem.CornerRadius.xl)
+            .padding(DesignSystem.Spacing.xxxl)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl)
+                    .fill(.regularMaterial)
+                    .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+            )
             .frame(width: 320)
         }
         .onAppear {
@@ -284,53 +345,67 @@ struct ImportPopup: View {
     @Binding var isPresented: Bool
     let playlist: Playlist
     let playlistManager: PlaylistManager
+    @Environment(\.colorTheme) private var colorTheme
 
     var body: some View {
         ZStack {
-            // Background overlay with blur effect
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
+            // Beautiful blur background with material
+            ZStack {
+                // Base dark overlay
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+
+                // Material blur effect
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.8)
+                    .ignoresSafeArea()
+            }
+            .onTapGesture {
+                isPresented = false
+            }
 
             // Popup content
-            VStack(spacing: 24) {
+            VStack(spacing: DesignSystem.Spacing.xl) {
                 // Icon and Title
-                VStack(spacing: 16) {
-                    // Music icon
+                VStack(spacing: DesignSystem.Spacing.lg) {
+                    // Music icon with theme gradient
                     Image(systemName: "music.note.list")
-                        .font(.system(size: 48))
-                        .foregroundStyle(.blue.gradient)
+                        .font(.system(size: 48, weight: .medium))
+                        .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
+                        .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 6, x: 0, y: 3)
 
                     // Title
                     Text("Add Music")
-                        .font(.title)
+                        .font(DesignSystem.Typography.title)
                         .fontWeight(.bold)
+                        .foregroundColor(.primary)
 
                     // Subtitle
                     Text("to \"\(playlist.name)\"")
-                        .font(.title3)
+                        .font(DesignSystem.Typography.title2)
                         .foregroundColor(.secondary)
                 }
 
-                // Action buttons
-                VStack(spacing: 16) {
+                // Action buttons with theme styling
+                VStack(spacing: DesignSystem.Spacing.lg) {
                     // Import Files button
                     Button(action: {
                         playlistManager.selectPlaylist(playlist)
                         playlistManager.importFiles()
                         isPresented = false
                     }) {
-                        HStack(spacing: 12) {
+                        HStack(spacing: DesignSystem.Spacing.md) {
                             Image(systemName: "doc.badge.plus")
-                                .font(.system(size: 18))
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(DesignSystem.colors(for: colorTheme).primary)
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Import Files")
-                                    .font(.headline)
+                                    .font(DesignSystem.Typography.headline)
+                                    .foregroundColor(.primary)
                                 Text("Select individual music files")
-                                    .font(.caption)
+                                    .font(DesignSystem.Typography.caption)
                                     .foregroundColor(.secondary)
                             }
 
@@ -340,12 +415,12 @@ struct ImportPopup: View {
                                 .font(.system(size: 12))
                                 .foregroundColor(.secondary)
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
+                        .padding(.horizontal, DesignSystem.Spacing.xl)
+                        .padding(.vertical, DesignSystem.Spacing.lg)
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.blue.opacity(0.1))
-                                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
+                                .fill(DesignSystem.colors(for: colorTheme).primary.opacity(0.08))
+                                .stroke(DesignSystem.colors(for: colorTheme).primary.opacity(0.2), lineWidth: 1)
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -357,15 +432,17 @@ struct ImportPopup: View {
                         playlistManager.importFolder()
                         isPresented = false
                     }) {
-                        HStack(spacing: 12) {
+                        HStack(spacing: DesignSystem.Spacing.md) {
                             Image(systemName: "folder.badge.plus")
-                                .font(.system(size: 18))
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(DesignSystem.colors(for: colorTheme).primary)
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Import Folder")
-                                    .font(.headline)
+                                    .font(DesignSystem.Typography.headline)
+                                    .foregroundColor(.primary)
                                 Text("Select an entire music folder")
-                                    .font(.caption)
+                                    .font(DesignSystem.Typography.caption)
                                     .foregroundColor(.secondary)
                             }
 
@@ -375,12 +452,12 @@ struct ImportPopup: View {
                                 .font(.system(size: 12))
                                 .foregroundColor(.secondary)
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
+                        .padding(.horizontal, DesignSystem.Spacing.xl)
+                        .padding(.vertical, DesignSystem.Spacing.lg)
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.green.opacity(0.1))
-                                .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
+                                .fill(DesignSystem.colors(for: colorTheme).primary.opacity(0.08))
+                                .stroke(DesignSystem.colors(for: colorTheme).primary.opacity(0.2), lineWidth: 1)
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -394,9 +471,9 @@ struct ImportPopup: View {
                 .buttonStyle(.plain)
                 .foregroundColor(.secondary)
             }
-            .padding(32)
+            .padding(DesignSystem.Spacing.xxxl)
             .background(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl)
                     .fill(.regularMaterial)
                     .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
             )
@@ -412,45 +489,51 @@ struct PlaylistNamePopup: View {
     let pendingFiles: [URL]
     let onSave: () -> Void
     @FocusState private var isTextFieldFocused: Bool
+    @Environment(\.colorTheme) private var colorTheme
 
     var body: some View {
         ZStack {
-            // Background blur
-            Color.black.opacity(0.3)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
+            // Beautiful blur background with material
+            ZStack {
+                // Base dark overlay
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+
+                // Material blur effect
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.8)
+                    .ignoresSafeArea()
+            }
+            .onTapGesture {
+                isPresented = false
+            }
 
             // Popup content
-            VStack(spacing: 24) {
-                // Header
-                VStack(spacing: 12) {
+            VStack(spacing: DesignSystem.Spacing.xl) {
+                // Header with theme styling
+                VStack(spacing: DesignSystem.Spacing.md) {
                     Image(systemName: "music.note.list")
                         .font(.system(size: 48, weight: .medium))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.blue, .cyan],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
+                        .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 6, x: 0, y: 3)
 
                     Text("Create New Playlist")
-                        .font(.title2)
+                        .font(DesignSystem.Typography.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
 
                     Text("Enter a name for your new playlist")
-                        .font(.subheadline)
+                        .font(DesignSystem.Typography.callout)
                         .foregroundColor(.secondary)
+                        .opacity(0.8)
                 }
 
-                // Text field
-                VStack(alignment: .leading, spacing: 8) {
+                // Text field with theme styling
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
                     TextField("Playlist name", text: $playlistName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .font(.system(size: 16))
+                        .font(DesignSystem.Typography.body)
                         .frame(width: 280)
                         .focused($isTextFieldFocused)
                         .onSubmit {
@@ -458,29 +541,34 @@ struct PlaylistNamePopup: View {
                         }
 
                     Text("\(pendingFiles.count) file\(pendingFiles.count == 1 ? "" : "s") ready to import")
-                        .font(.caption)
+                        .font(DesignSystem.Typography.caption)
                         .foregroundColor(.secondary)
+                        .opacity(0.8)
                 }
 
-                // Buttons
-                HStack(spacing: 12) {
+                // Themed buttons
+                HStack(spacing: DesignSystem.Spacing.md) {
                     Button("Cancel") {
                         isPresented = false
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(SecondaryButtonStyle())
                     .keyboardShortcut(.escape)
 
                     Button("Create") {
                         onSave()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(ThemedPrimaryButtonStyle(theme: colorTheme))
                     .keyboardShortcut(.return)
                     .disabled(playlistName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
-            .padding(32)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+            .padding(DesignSystem.Spacing.xxxl)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl)
+                    .fill(.regularMaterial)
+                    .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+            )
+            .frame(width: 320)
         }
         .onAppear {
             isTextFieldFocused = true

@@ -12,133 +12,100 @@ struct PreferencesView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("Preferences")
-                    .font(DesignSystem.Typography.title)
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Button(action: {
-                    dismiss()
-                }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary)
-                        .font(.system(size: 20))
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help("Close")
-            }
-            .padding(DesignSystem.Spacing.xl)
-            .background(
-                ZStack {
-                    Rectangle()
-                        .fill(DesignSystem.colors(for: preferencesManager.colorTheme).surface)
-                        .shadow(color: DesignSystem.Shadow.light, radius: 1, x: 0, y: 1)
-                    preferencesManager.colorTheme.surfaceTint
-                }
-            )
-            
-            // Content
-            ScrollView {
-                VStack(spacing: DesignSystem.Spacing.xxl) {
-                    // Appearance Section
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                        HStack {
-                            Image(systemName: "paintbrush.fill")
-                                .foregroundColor(preferencesManager.colorTheme.primaryColor)
-                                .font(.system(size: 20))
-                            
-                            Text("Appearance")
-                                .font(DesignSystem.Typography.headline)
-                                .foregroundColor(.primary)
-                        }
-                        
-                        VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
-                            Text("Color Theme")
-                                .font(DesignSystem.Typography.callout)
-                                .foregroundColor(.secondary)
-                            
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DesignSystem.Spacing.md), count: 5), spacing: DesignSystem.Spacing.md) {
-                                ForEach(ColorTheme.allCases) { theme in
-                                    ThemeColorButton(
-                                        theme: theme,
-                                        isSelected: preferencesManager.colorTheme == theme,
-                                        action: {
-                                            withAnimation(.easeInOut(duration: 0.2)) {
-                                                preferencesManager.colorTheme = theme
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                        .cardStyle()
-                    }
-                    
-                    // Preview Section
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                        HStack {
-                            Image(systemName: "eye.fill")
-                                .foregroundColor(preferencesManager.colorTheme.primaryColor)
-                                .font(.system(size: 20))
-                            
-                            Text("Preview")
-                                .font(DesignSystem.Typography.headline)
-                                .foregroundColor(.primary)
-                        }
-                        
-                        ThemePreview(theme: preferencesManager.colorTheme)
-                            .cardStyle()
-                    }
-                    
-                    // Reset Section
-                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
-                        HStack {
-                            Image(systemName: "arrow.clockwise")
-                                .foregroundColor(.secondary)
-                                .font(.system(size: 20))
-                            
-                            Text("Reset")
-                                .font(DesignSystem.Typography.headline)
-                                .foregroundColor(.primary)
-                        }
-                        
-                        HStack {
-                            VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
-                                Text("Reset to Defaults")
-                                    .font(DesignSystem.Typography.body)
-                                    .foregroundColor(.primary)
-                                
-                                Text("Restore all settings to their default values")
-                                    .font(DesignSystem.Typography.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Spacer()
-                            
-                            Button("Reset") {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    preferencesManager.resetToDefaults()
-                                }
-                            }
-                            .buttonStyle(SecondaryButtonStyle())
-                        }
-                        .cardStyle()
-                    }
-                }
-                .padding(DesignSystem.Spacing.xl)
-            }
-        }
-        .frame(width: 500, height: 600)
-        .background(
+        ZStack {
+            // Beautiful blur background with material
             ZStack {
-                DesignSystem.colors(for: preferencesManager.colorTheme).background
-                preferencesManager.colorTheme.backgroundTint
+                // Base dark overlay
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+
+                // Material blur effect
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.8)
+                    .ignoresSafeArea()
             }
-        )
+            .onTapGesture {
+                dismiss()
+            }
+
+            // Main content
+            VStack(spacing: DesignSystem.Spacing.xl) {
+                // Header
+                HStack {
+                    Text("Preferences")
+                        .font(DesignSystem.Typography.title)
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                            .font(.system(size: 20))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .help("Close")
+                }
+
+                // Appearance Section
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                    HStack {
+                        Image(systemName: "paintbrush.fill")
+                            .foregroundColor(preferencesManager.colorTheme.primaryColor)
+                            .font(.system(size: 18))
+
+                        Text("Appearance")
+                            .font(DesignSystem.Typography.headline)
+                            .foregroundColor(.primary)
+                    }
+
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.md) {
+                        Text("Color Theme")
+                            .font(DesignSystem.Typography.callout)
+                            .foregroundColor(.secondary)
+
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DesignSystem.Spacing.md), count: 5), spacing: DesignSystem.Spacing.md) {
+                            ForEach(ColorTheme.allCases) { theme in
+                                ThemeColorButton(
+                                    theme: theme,
+                                    isSelected: preferencesManager.colorTheme == theme,
+                                    action: {
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            preferencesManager.colorTheme = theme
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Preview Section
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.lg) {
+                    HStack {
+                        Image(systemName: "eye.fill")
+                            .foregroundColor(preferencesManager.colorTheme.primaryColor)
+                            .font(.system(size: 18))
+
+                        Text("Preview")
+                            .font(DesignSystem.Typography.headline)
+                            .foregroundColor(.primary)
+                    }
+
+                    ThemePreview(theme: preferencesManager.colorTheme)
+                }
+            }
+            .padding(DesignSystem.Spacing.xxxl)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl)
+                    .fill(.regularMaterial)
+                    .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+            )
+            .frame(width: 480, height: 520)
+        }
     }
 }
 
@@ -160,20 +127,20 @@ struct ThemeColorButton: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 40, height: 40)
+                    .frame(width: 36, height: 36)
                     .overlay(
                         Circle()
-                            .stroke(isSelected ? Color.primary : Color.clear, lineWidth: 3)
+                            .stroke(isSelected ? Color.primary : Color.clear, lineWidth: 2.5)
                     )
                     .overlay(
                         Circle()
-                            .stroke(Color.white, lineWidth: 2)
+                            .stroke(Color.white.opacity(0.8), lineWidth: 1.5)
                     )
-                    .shadow(color: DesignSystem.Shadow.medium, radius: 4, x: 0, y: 2)
-                
+                    .shadow(color: DesignSystem.Shadow.medium, radius: 3, x: 0, y: 2)
+
                 // Theme name
                 Text(theme.displayName)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundColor(isSelected ? theme.primaryColor : .secondary)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
@@ -188,13 +155,13 @@ struct ThemeColorButton: View {
 // MARK: - Theme Preview
 struct ThemePreview: View {
     let theme: ColorTheme
-    
+
     var body: some View {
         VStack(spacing: DesignSystem.Spacing.lg) {
             Text("Theme Preview")
                 .font(DesignSystem.Typography.headline)
                 .foregroundColor(.primary)
-            
+
             // Mock player controls
             HStack(spacing: DesignSystem.Spacing.lg) {
                 // Previous button
@@ -203,14 +170,14 @@ struct ThemePreview: View {
                         .foregroundColor(.primary)
                 }
                 .buttonStyle(ThemedIconButtonStyle(size: 32, theme: theme))
-                
+
                 // Play button
                 Button(action: {}) {
                     Image(systemName: "play.fill")
                         .foregroundColor(.white)
                 }
                 .buttonStyle(ThemedIconButtonStyle(size: 44, isActive: true, theme: theme))
-                
+
                 // Next button
                 Button(action: {}) {
                     Image(systemName: "forward.fill")
@@ -218,29 +185,31 @@ struct ThemePreview: View {
                 }
                 .buttonStyle(ThemedIconButtonStyle(size: 32, theme: theme))
             }
-            
+
             // Mock buttons
             HStack(spacing: DesignSystem.Spacing.md) {
                 Button("Primary") {}
                     .buttonStyle(ThemedPrimaryButtonStyle(theme: theme))
-                
+
                 Button("Secondary") {}
                     .buttonStyle(SecondaryButtonStyle())
             }
-            
+
             // Color swatches
             HStack(spacing: DesignSystem.Spacing.sm) {
                 ForEach(theme.gradientColors.indices, id: \.self) { index in
                     Circle()
                         .fill(theme.gradientColors[index])
-                        .frame(width: 20, height: 20)
+                        .frame(width: 16, height: 16)
+                        .shadow(color: DesignSystem.Shadow.light, radius: 2, x: 0, y: 1)
                 }
             }
         }
         .padding(DesignSystem.Spacing.lg)
         .background(
-            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
-                .fill(DesignSystem.Colors.surfaceSecondary)
+            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
+                .fill(.ultraThinMaterial)
+                .opacity(0.8)
         )
     }
 }

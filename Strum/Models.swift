@@ -388,6 +388,23 @@ class MusicPlayerManager: ObservableObject {
             }
         }
     }
+
+    func playFirstTrack(in playlist: Playlist) {
+        guard !playlist.tracks.isEmpty else { return }
+
+        let firstTrack: Track
+        if shuffleMode == .tracks {
+            // Generate shuffled indices for the new playlist
+            currentPlaylist = playlist
+            generateShuffledIndices()
+            currentShuffleIndex = 0
+            firstTrack = playlist.tracks[shuffledIndices[0]]
+        } else {
+            firstTrack = playlist.tracks[0]
+        }
+
+        play(track: firstTrack, in: playlist)
+    }
     
     func pause() {
         audioPlayer?.pause()
