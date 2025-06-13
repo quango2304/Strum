@@ -19,6 +19,7 @@ struct PlaylistSidebar: View {
     @Binding var pendingFiles: [URL]
     let isCompact: Bool
     @State private var isDragOver = false
+    @Environment(\.colorTheme) private var colorTheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -37,15 +38,23 @@ struct PlaylistSidebar: View {
                     Image(systemName: "plus.circle.fill")
                         .foregroundColor(.white)
                 }
-                .buttonStyle(IconButtonStyle(size: 28, isActive: true))
+                .buttonStyle(ThemedIconButtonStyle(size: 28, isActive: true, theme: colorTheme))
                 .help("Add Playlist")
             }
             .padding(.horizontal, DesignSystem.Spacing.md)
             .padding(.vertical, DesignSystem.Spacing.sm)
             .background(
-                Rectangle()
-                    .fill(DesignSystem.Colors.surface)
-                    .shadow(color: DesignSystem.Shadow.light, radius: 1, x: 0, y: 1)
+                ZStack {
+                    // Subtle transparent background
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.3)
+
+                    // Very subtle color tint
+                    Rectangle()
+                        .fill(colorTheme.surfaceTint)
+                        .opacity(0.15)
+                }
             )
 
             Divider()
@@ -106,26 +115,34 @@ struct PlaylistSidebar: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 20)
             } else {
-                List(playlistManager.playlists, id: \.id, selection: Binding(
-                    get: { playlistManager.selectedPlaylist?.id },
-                    set: { selectedId in
-                        if let selectedId = selectedId,
-                           let playlist = playlistManager.playlists.first(where: { $0.id == selectedId }) {
-                            playlistManager.selectPlaylist(playlist)
-                        }
-                    }
-                )) { playlist in
+                List(playlistManager.playlists, id: \.id) { playlist in
                     PlaylistRow(
                         playlist: playlist,
+                        isSelected: playlistManager.selectedPlaylist?.id == playlist.id,
                         playlistManager: playlistManager,
                         showingImportPopup: $showingImportPopup,
                         selectedPlaylistForImport: $selectedPlaylistForImport
                     )
-                    .tag(playlist.id)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
-                .listStyle(SidebarListStyle())
+                .listStyle(PlainListStyle())
             }
         }
+        .background(
+            // Subtle transparent background that works with global blur
+            ZStack {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.4)
+
+                // Very subtle themed overlay
+                Rectangle()
+                    .fill(colorTheme.surfaceTint)
+                    .opacity(0.1)
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg))
         .frame(
             minWidth: isCompact ? nil : 200,
             maxWidth: isCompact ? .infinity : 300,
@@ -195,6 +212,12 @@ struct PlaylistSidebar: View {
             }
             .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isDragOver)
         )
+        .background(
+            ZStack {
+                DesignSystem.colors(for: colorTheme).sidebarBackground
+                colorTheme.backgroundTint.opacity(0.3)
+            }
+        )
         .onDrop(of: [.fileURL], isTargeted: $isDragOver) { providers in
             return handleDrop(providers: providers)
         }
@@ -259,21 +282,24 @@ struct PlaylistSidebar: View {
 
 struct PlaylistRow: View {
     @ObservedObject var playlist: Playlist
+    let isSelected: Bool
     let playlistManager: PlaylistManager
     @Binding var showingImportPopup: Bool
     @Binding var selectedPlaylistForImport: Playlist?
     @State private var isHovered = false
+    @Environment(\.colorTheme) private var colorTheme
 
     var body: some View {
         HStack {
             Image(systemName: "music.note.list")
-                .foregroundColor(.secondary)
+                .foregroundColor(isSelected ? colorTheme.primaryColor : .secondary)
                 .frame(width: 16, height: 16)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(playlist.name)
                     .font(.system(size: 13))
                     .lineLimit(1)
+                    .foregroundColor(isSelected ? colorTheme.primaryColor : .primary)
 
                 Text("\(playlist.tracks.count) songs")
                     .font(.system(size: 11))
@@ -310,11 +336,48 @@ struct PlaylistRow: View {
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, DesignSystem.Spacing.sm)
+        .padding(.vertical, DesignSystem.Spacing.xs)
         .contentShape(Rectangle())
         .onHover { hovering in
             isHovered = hovering
         }
+        .onTapGesture {
+            playlistManager.selectPlaylist(playlist)
+        }
+        .background(
+            Group {
+                if isSelected {
+                    // Subtle selection background
+                    ZStack {
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                            .fill(.ultraThinMaterial)
+                            .opacity(0.6)
+
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                            .fill(colorTheme.primaryColor)
+                            .opacity(0.25)
+                    }
+                } else if isHovered {
+                    // Subtle hover state
+                    ZStack {
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                            .fill(.ultraThinMaterial)
+                            .opacity(0.4)
+
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                            .fill(Color.primary)
+                            .opacity(0.1)
+                    }
+                } else {
+                    // Transparent
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                        .fill(Color.clear)
+                }
+            }
+            .animation(.easeInOut(duration: 0.15), value: isHovered)
+            .animation(.easeInOut(duration: 0.15), value: isSelected)
+        )
 
     }
 }

@@ -9,9 +9,13 @@ import SwiftUI
 
 @main
 struct StrumApp: App {
+    @StateObject private var preferencesManager = PreferencesManager()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(preferencesManager)
+                .environment(\.colorTheme, preferencesManager.colorTheme)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
@@ -27,6 +31,21 @@ struct StrumApp: App {
                 }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
             }
+
+            CommandGroup(after: .appInfo) {
+                Button("Preferences...") {
+                    preferencesManager.showPreferences = true
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
         }
+
+        // Preferences Window
+        WindowGroup("Preferences", id: "preferences") {
+            PreferencesView(preferencesManager: preferencesManager)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
     }
 }

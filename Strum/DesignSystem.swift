@@ -10,7 +10,7 @@ import SwiftUI
 // MARK: - Design System
 struct DesignSystem {
     
-    // MARK: - Colors
+    // MARK: - Colors (Legacy - use ThemedColors instead)
     struct Colors {
         static let primary = Color.accentColor
         static let secondary = Color.secondary
@@ -19,7 +19,7 @@ struct DesignSystem {
         static let surfaceSecondary = Color(NSColor.controlBackgroundColor)
         static let border = Color(NSColor.separatorColor)
         static let overlay = Color.black.opacity(0.3)
-        
+
         // Custom colors for enhanced UI
         static let cardBackground = Color(NSColor.controlBackgroundColor).opacity(0.8)
         static let hoverBackground = Color.primary.opacity(0.08)

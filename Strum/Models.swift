@@ -254,24 +254,26 @@ struct Track: Identifiable, Codable, Hashable {
 
 // MARK: - Playlist Model
 class Playlist: ObservableObject, Identifiable, Codable, Equatable {
-    let id = UUID()
+    let id: UUID
     @Published var name: String
     @Published var tracks: [Track]
     let createdAt: Date
-    
+
     init(name: String, tracks: [Track] = []) {
+        self.id = UUID()
         self.name = name
         self.tracks = tracks
         self.createdAt = Date()
     }
-    
+
     // MARK: - Codable Implementation
     enum CodingKeys: String, CodingKey {
         case id, name, tracks, createdAt
     }
-    
+
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
         tracks = try container.decode([Track].self, forKey: .tracks)
         createdAt = try container.decode(Date.self, forKey: .createdAt)

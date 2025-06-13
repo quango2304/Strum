@@ -10,6 +10,8 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var playlistManager = PlaylistManager()
     @StateObject private var musicPlayer = MusicPlayerManager()
+    @EnvironmentObject private var preferencesManager: PreferencesManager
+    @Environment(\.colorTheme) private var colorTheme
     @State private var showingAddPlaylistPopup = false
     @State private var newPlaylistName = ""
     @State private var showingImportPopup = false
@@ -112,6 +114,12 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 600, minHeight: 500) // Reduced minimum size for better responsiveness
+        .background(
+            ZStack {
+                DesignSystem.colors(for: colorTheme).background
+                colorTheme.backgroundTint
+            }
+        )
         .toast(isShowing: $showingToast, message: toastMessage, type: toastType)
         .onAppear {
             // Set up toast callback for import success
@@ -120,6 +128,9 @@ struct ContentView: View {
                 toastType = .success
                 showingToast = true
             }
+        }
+        .sheet(isPresented: $preferencesManager.showPreferences) {
+            PreferencesView(preferencesManager: preferencesManager)
         }
         .overlay(
             // Add Playlist Popup - Centered in entire app window
@@ -205,11 +216,12 @@ struct AddPlaylistPopup: View {
     @Binding var playlistName: String
     let onSave: () -> Void
     @FocusState private var isTextFieldFocused: Bool
+    @Environment(\.colorTheme) private var colorTheme
 
     var body: some View {
         ZStack {
             // Background overlay with blur
-            DesignSystem.Colors.overlay
+            DesignSystem.colors(for: colorTheme).overlay
                 .ignoresSafeArea()
                 .onTapGesture {
                     isPresented = false
@@ -221,13 +233,7 @@ struct AddPlaylistPopup: View {
                 VStack(spacing: DesignSystem.Spacing.md) {
                     Image(systemName: "music.note.list")
                         .font(.system(size: 40))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.accentColor, .blue],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
 
                     Text("New Playlist")
                         .font(DesignSystem.Typography.title2)
@@ -254,7 +260,7 @@ struct AddPlaylistPopup: View {
                     Button("Create") {
                         onSave()
                     }
-                    .buttonStyle(PrimaryButtonStyle())
+                    .buttonStyle(ThemedPrimaryButtonStyle(theme: colorTheme))
                     .keyboardShortcut(.return)
                     .disabled(playlistName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }

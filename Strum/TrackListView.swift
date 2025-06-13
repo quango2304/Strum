@@ -16,6 +16,7 @@ struct TrackListView: View {
 
     // We need access to PlaylistManager to save changes
     @EnvironmentObject var playlistManager: PlaylistManager
+    @Environment(\.colorTheme) private var colorTheme
     
     var body: some View {
         VStack(spacing: 0) {
@@ -34,9 +35,17 @@ struct TrackListView: View {
             .padding(.horizontal, DesignSystem.Spacing.xl)
             .padding(.vertical, DesignSystem.Spacing.lg)
             .background(
-                Rectangle()
-                    .fill(DesignSystem.Colors.surface)
-                    .shadow(color: DesignSystem.Shadow.light, radius: 1, x: 0, y: 1)
+                ZStack {
+                    // Subtle transparent background
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.3)
+
+                    // Very subtle color tint
+                    Rectangle()
+                        .fill(colorTheme.surfaceTint)
+                        .opacity(0.1)
+                }
             )
             
             Divider()
@@ -97,7 +106,8 @@ struct TrackListView: View {
                             track: track,
                             trackNumber: index + 1,
                             isPlaying: musicPlayer.currentTrack?.id == track.id && musicPlayer.playerState == .playing,
-                            isPaused: musicPlayer.currentTrack?.id == track.id && musicPlayer.playerState == .paused
+                            isPaused: musicPlayer.currentTrack?.id == track.id && musicPlayer.playerState == .paused,
+                            colorTheme: colorTheme
                         ) {
                             musicPlayer.play(track: track, in: playlist)
                         }
@@ -112,8 +122,35 @@ struct TrackListView: View {
                     }
                 }
                 .listStyle(PlainListStyle())
+                .background(
+                    // Very subtle background for track list
+                    ZStack {
+                        Rectangle()
+                            .fill(.ultraThinMaterial)
+                            .opacity(0.2)
+
+                        // Minimal gradient
+                        Rectangle()
+                            .fill(colorTheme.surfaceTint)
+                            .opacity(0.05)
+                    }
+                )
             }
         }
+        .background(
+            // Minimal container background that works with global blur
+            ZStack {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.2)
+
+                // Very subtle themed overlay
+                Rectangle()
+                    .fill(colorTheme.surfaceTint)
+                    .opacity(0.03)
+            }
+        )
+        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg))
         .overlay(
             // Beautiful blur drag overlay
             Group {
@@ -281,8 +318,9 @@ struct TrackRow: View {
     let trackNumber: Int
     let isPlaying: Bool
     let isPaused: Bool
+    let colorTheme: ColorTheme
     let onPlay: () -> Void
-    
+
     @State private var isHovered = false
     
     var body: some View {
@@ -321,11 +359,11 @@ struct TrackRow: View {
                 } else if isPlaying {
                     Image(systemName: "speaker.wave.2.fill")
                         .font(.system(size: 12))
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(colorTheme.primaryColor)
                 } else if isPaused {
                     Image(systemName: "pause.fill")
                         .font(.system(size: 12))
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(colorTheme.primaryColor)
                 } else {
                     Text("\(trackNumber)")
                         .font(.caption)
@@ -339,7 +377,7 @@ struct TrackRow: View {
                 .font(DesignSystem.Typography.trackTitle)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .foregroundColor(isPlaying || isPaused ? .accentColor : .primary)
+                .foregroundColor(isPlaying || isPaused ? colorTheme.primaryColor : .primary)
 
             // Artist
             Text(track.artist ?? "Unknown Artist")
@@ -371,9 +409,38 @@ struct TrackRow: View {
             onPlay()
         }
         .background(
-            Rectangle()
-                .fill(isHovered ? DesignSystem.Colors.hoverBackground : Color.clear)
-                .animation(.easeInOut(duration: 0.15), value: isHovered)
+            Group {
+                if isPlaying || isPaused {
+                    // Subtle active track background
+                    ZStack {
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                            .fill(.ultraThinMaterial)
+                            .opacity(0.5)
+
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                            .fill(colorTheme.primaryColor)
+                            .opacity(0.2)
+                    }
+                } else if isHovered {
+                    // Subtle hover state
+                    ZStack {
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                            .fill(.ultraThinMaterial)
+                            .opacity(0.3)
+
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                            .fill(Color.primary)
+                            .opacity(0.08)
+                    }
+                } else {
+                    // Transparent
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                        .fill(Color.clear)
+                }
+            }
+            .animation(.easeInOut(duration: 0.15), value: isHovered)
+            .animation(.easeInOut(duration: 0.15), value: isPlaying)
+            .animation(.easeInOut(duration: 0.15), value: isPaused)
         )
     }
     
