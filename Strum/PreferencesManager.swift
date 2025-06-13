@@ -18,8 +18,8 @@ enum ColorTheme: String, CaseIterable, Identifiable {
     case pink = "pink"
     case teal = "teal"
     case indigo = "indigo"
-    case mint = "mint"
-    case cyan = "cyan"
+    case tangerine = "tangerine"
+    case system = "system"
     
     var id: String { rawValue }
     
@@ -33,8 +33,8 @@ enum ColorTheme: String, CaseIterable, Identifiable {
         case .pink: return "Rose Pink"
         case .teal: return "Tropical Teal"
         case .indigo: return "Deep Indigo"
-        case .mint: return "Fresh Mint"
-        case .cyan: return "Sky Cyan"
+        case .tangerine: return "Tangerine"
+        case .system: return "System"
         }
     }
     
@@ -48,8 +48,8 @@ enum ColorTheme: String, CaseIterable, Identifiable {
         case .pink: return Color.pink
         case .teal: return Color.teal
         case .indigo: return Color.indigo
-        case .mint: return Color.mint
-        case .cyan: return Color.cyan
+        case .tangerine: return Color(red: 1.0, green: 0.4, blue: 0.35) // Tangerine color
+        case .system: return Color.accentColor // macOS system accent color
         }
     }
     
@@ -63,8 +63,8 @@ enum ColorTheme: String, CaseIterable, Identifiable {
         case .pink: return [Color.pink, Color.purple]
         case .teal: return [Color.teal, Color.cyan]
         case .indigo: return [Color.indigo, Color.purple]
-        case .mint: return [Color.mint, Color.green]
-        case .cyan: return [Color.cyan, Color.blue]
+        case .tangerine: return [Color(red: 1.0, green: 0.4, blue: 0.35), Color(red: 1.0, green: 0.5, blue: 0.4)]
+        case .system: return [Color.accentColor, Color.accentColor.opacity(0.7)]
         }
     }
 
@@ -85,7 +85,7 @@ enum ColorTheme: String, CaseIterable, Identifiable {
 
 // MARK: - Preferences Manager
 class PreferencesManager: ObservableObject {
-    @Published var colorTheme: ColorTheme = .blue {
+    @Published var colorTheme: ColorTheme = .red {
         didSet {
             savePreferences()
         }
@@ -112,13 +112,13 @@ class PreferencesManager: ObservableObject {
     }
     
     func resetToDefaults() {
-        colorTheme = .blue
+        colorTheme = .red
     }
 }
 
 // MARK: - Theme Environment Key
 struct ThemeEnvironmentKey: EnvironmentKey {
-    static let defaultValue: ColorTheme = .blue
+    static let defaultValue: ColorTheme = .red
 }
 
 extension EnvironmentValues {
@@ -205,7 +205,7 @@ struct ThemedPrimaryButtonStyle: ButtonStyle {
     let isCompact: Bool
     let theme: ColorTheme
     
-    init(isCompact: Bool = false, theme: ColorTheme = .blue) {
+    init(isCompact: Bool = false, theme: ColorTheme = .red) {
         self.isCompact = isCompact
         self.theme = theme
     }
@@ -232,7 +232,7 @@ struct ThemedIconButtonStyle: ButtonStyle {
     let theme: ColorTheme
     let useGradient: Bool
 
-    init(size: CGFloat = 32, isActive: Bool = false, theme: ColorTheme = .blue, useGradient: Bool = false) {
+    init(size: CGFloat = 32, isActive: Bool = false, theme: ColorTheme = .red, useGradient: Bool = false) {
         self.size = size
         self.isActive = isActive
         self.theme = theme

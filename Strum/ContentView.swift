@@ -631,6 +631,10 @@ struct ImportPopup: View {
                     .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
             )
             .frame(width: 380)
+            .onKeyPress(.escape) {
+                isPresented = false
+                return .handled
+            }
         }
     }
 }

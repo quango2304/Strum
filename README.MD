@@ -5,7 +5,7 @@ A beautiful, modern music player for macOS built with SwiftUI.
 ## ✨ Recent UI/UX Improvements
 
 ### 🎨 Comprehensive Color Theme System
-- **10 Beautiful Themes**: Choose from Ocean Blue, Royal Purple, Forest Green, Sunset Orange, Cherry Red, Rose Pink, Tropical Teal, Deep Indigo, Fresh Mint, and Sky Cyan
+- **10 Beautiful Themes**: Choose from Ocean Blue, Royal Purple, Forest Green, Sunset Orange, Cherry Red, Rose Pink, Tropical Teal, Deep Indigo, Tangerine, and System
 - **App-Wide Theming**: Every UI element adapts to your chosen theme - backgrounds, surfaces, buttons, controls, and accents
 - **Subtle & Beautiful**: Reasonable opacity levels and tasteful color blending that enhances without overwhelming
 - **Live Preview**: See theme changes instantly throughout the entire app
