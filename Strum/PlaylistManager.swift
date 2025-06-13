@@ -39,17 +39,21 @@ class PlaylistManager: ObservableObject {
         savePlaylists()
     }
     
-    func createPlaylist(name: String) {
+    func createPlaylist(name: String) -> Playlist {
         let newPlaylist = Playlist(name: name)
         playlists.append(newPlaylist)
         savePlaylists()
+        return newPlaylist
     }
     
     func deletePlaylist(_ playlist: Playlist) {
         playlists.removeAll { $0.id == playlist.id }
+
+        // If we deleted the selected playlist, select another one
         if selectedPlaylist?.id == playlist.id {
             selectedPlaylist = playlists.first
         }
+
         savePlaylists()
     }
     
@@ -115,7 +119,31 @@ class PlaylistManager: ObservableObject {
             }
         }
     }
-    
+
+    func importFolderAtURL(_ folderURL: URL) {
+        print("importFolderAtURL called with: \(folderURL)")
+
+        // For drag and drop, we don't need security scoped access
+        // The system grants temporary access to dragged files
+        let tracks = findAudioFiles(in: folderURL)
+        print("Found \(tracks.count) audio files")
+
+        guard let playlist = selectedPlaylist else {
+            print("No selected playlist")
+            return
+        }
+
+        print("Adding tracks to playlist: \(playlist.name)")
+        DispatchQueue.main.async {
+            for track in tracks {
+                print("Adding track: \(track.title)")
+                playlist.addTrack(track)
+            }
+            print("Saving playlists")
+            self.savePlaylists()
+        }
+    }
+
     private func findAudioFiles(in directory: URL) -> [Track] {
         var tracks: [Track] = []
         let fileManager = FileManager.default
@@ -141,7 +169,7 @@ class PlaylistManager: ObservableObject {
         return tracks.sorted { $0.title < $1.title }
     }
     
-    private func savePlaylists() {
+    func savePlaylists() {
         do {
             let data = try JSONEncoder().encode(playlists)
             try data.write(to: playlistsURL)

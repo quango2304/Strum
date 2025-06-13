@@ -17,14 +17,24 @@ struct PlayerControlsView: View {
             HStack(spacing: 16) {
                 // Track Info
                 HStack(spacing: 12) {
-                    // Album Art Placeholder
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.secondary.opacity(0.3))
-                        .frame(width: 50, height: 50)
-                        .overlay(
-                            Image(systemName: "music.note")
-                                .foregroundColor(.secondary)
-                        )
+                    // Album Art
+                    Group {
+                        if let artwork = musicPlayer.currentTrack?.artwork {
+                            Image(nsImage: artwork)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 50, height: 50)
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                        } else {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.secondary.opacity(0.3))
+                                .frame(width: 50, height: 50)
+                                .overlay(
+                                    Image(systemName: "music.note")
+                                        .foregroundColor(.secondary)
+                                )
+                        }
+                    }
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text(musicPlayer.currentTrack?.title ?? "No track selected")
@@ -128,10 +138,10 @@ struct PlayerControlsView: View {
                 .frame(width: 200, alignment: .trailing)
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 12)
+            .padding(.vertical, 20)
             .background(Color(NSColor.controlBackgroundColor))
         }
-        .frame(height: 80)
+        .frame(height: 96)
     }
     
     private func formatTime(_ time: TimeInterval) -> String {

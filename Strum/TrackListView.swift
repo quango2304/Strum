@@ -6,11 +6,16 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct TrackListView: View {
     @ObservedObject var playlist: Playlist
     @ObservedObject var musicPlayer: MusicPlayerManager
     @State private var selectedTrack: Track?
+    @State private var isDragOver = false
+
+    // We need access to PlaylistManager to save changes
+    @EnvironmentObject var playlistManager: PlaylistManager
     
     var body: some View {
         VStack(spacing: 0) {
@@ -105,6 +110,165 @@ struct TrackListView: View {
                 .listStyle(PlainListStyle())
             }
         }
+        .overlay(
+            // Beautiful blur drag overlay
+            Group {
+                if isDragOver {
+                    ZStack {
+                        // Radial blur background effect
+                        RadialGradient(
+                            gradient: Gradient(stops: [
+                                .init(color: Color.white.opacity(0.3), location: 0.0),
+                                .init(color: Color.white.opacity(0.15), location: 0.3),
+                                .init(color: Color.white.opacity(0.08), location: 0.6),
+                                .init(color: Color.white.opacity(0.03), location: 1.0)
+                            ]),
+                            center: .center,
+                            startRadius: 0,
+                            endRadius: 300
+                        )
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 0))
+
+                        // Content with beautiful styling
+                        VStack(spacing: 20) {
+                            // Animated music icon
+                            Image(systemName: "music.note.list")
+                                .font(.system(size: 72, weight: .medium))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.blue, .cyan],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+
+                            VStack(spacing: 12) {
+                                Text("Drop Music Here")
+                                    .font(.title)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [.primary, .blue],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+
+                                Text("Add files or folders to \"\(playlist.name)\"")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .opacity(0.8)
+                            }
+                        }
+                        .padding(40)
+                    }
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.8).combined(with: .opacity),
+                        removal: .scale(scale: 1.1).combined(with: .opacity)
+                    ))
+                }
+            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isDragOver)
+        )
+        .onDrop(of: [.fileURL], isTargeted: $isDragOver) { providers in
+            return handleDrop(providers: providers)
+        }
+    }
+
+    private func handleDrop(providers: [NSItemProvider]) -> Bool {
+        var hasValidProvider = false
+
+        for provider in providers {
+            if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
+                hasValidProvider = true
+                provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { (item, error) in
+                    if let error = error {
+                        print("Error loading item: \(error)")
+                        return
+                    }
+
+                    if let data = item as? Data,
+                       let url = URL(dataRepresentation: data, relativeTo: nil) {
+                        DispatchQueue.main.async {
+                            self.handleFileOrFolderDrop(url: url)
+                        }
+                    }
+                }
+            }
+        }
+
+        return hasValidProvider
+    }
+
+    private func handleFileOrFolderDrop(url: URL) {
+        // Check if it's a directory
+        var isDirectory: ObjCBool = false
+        let fileExists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
+
+        if fileExists && isDirectory.boolValue {
+            // It's a folder - import all audio files from it
+            importFolderContents(url: url)
+        } else if fileExists {
+            // It's a file - check if it's an audio file and import it
+            importSingleFile(url: url)
+        }
+    }
+
+    private func importFolderContents(url: URL) {
+        let tracks = findAudioFiles(in: url)
+
+        DispatchQueue.main.async {
+            for track in tracks {
+                playlist.addTrack(track)
+            }
+            // Save the playlists to persist the changes
+            playlistManager.savePlaylists()
+        }
+    }
+
+    private func importSingleFile(url: URL) {
+        // Check if it's an audio file
+        let audioExtensions = ["mp3", "m4a", "wav", "flac", "aac", "ogg", "wma"]
+        let fileExtension = url.pathExtension.lowercased()
+
+        guard audioExtensions.contains(fileExtension) else {
+            return // Not an audio file
+        }
+
+        // Create track from file
+        let track = Track(url: url)
+
+        DispatchQueue.main.async {
+            playlist.addTrack(track)
+            // Save the playlists to persist the changes
+            playlistManager.savePlaylists()
+        }
+    }
+
+    private func findAudioFiles(in directory: URL) -> [Track] {
+        var tracks: [Track] = []
+        let audioExtensions = ["mp3", "m4a", "wav", "flac", "aac", "ogg", "wma"]
+
+        guard let enumerator = FileManager.default.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+        ) else {
+            return tracks
+        }
+
+        for case let fileURL as URL in enumerator {
+            let fileExtension = fileURL.pathExtension.lowercased()
+            if audioExtensions.contains(fileExtension) {
+                let track = Track(url: fileURL)
+                tracks.append(track)
+            }
+        }
+
+        return tracks
     }
 }
 
@@ -119,6 +283,26 @@ struct TrackRow: View {
     
     var body: some View {
         HStack(spacing: 12) {
+            // Small artwork thumbnail
+            Group {
+                if let artwork = track.artwork {
+                    Image(nsImage: artwork)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 24, height: 24)
+                        .clipShape(RoundedRectangle(cornerRadius: 2))
+                } else {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.secondary.opacity(0.3))
+                        .frame(width: 24, height: 24)
+                        .overlay(
+                            Image(systemName: "music.note")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                        )
+                }
+            }
+
             // Track Number / Play Button
             ZStack {
                 if isHovered {
