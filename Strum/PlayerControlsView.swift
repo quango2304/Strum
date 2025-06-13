@@ -10,6 +10,7 @@ import SwiftUI
 struct PlayerControlsView: View {
     @ObservedObject var musicPlayer: MusicPlayerManager
     @ObservedObject var playlistManager: PlaylistManager
+    @FocusState.Binding var isSearchFieldFocused: Bool
     let isCompact: Bool
     @Environment(\.colorTheme) private var colorTheme
 
@@ -78,6 +79,7 @@ struct PlayerControlsView: View {
                         HStack(spacing: 16) {
                             // Shuffle button (left)
                             Button(action: {
+                                isSearchFieldFocused = false
                                 musicPlayer.toggleShuffle()
                             }) {
                                 Image(systemName: "shuffle")
@@ -89,6 +91,7 @@ struct PlayerControlsView: View {
                             // Main playback controls (center)
                             HStack(spacing: 16) {
                                 Button(action: {
+                                    isSearchFieldFocused = false
                                     musicPlayer.previousTrack()
                                 }) {
                                     Image(systemName: "backward.fill")
@@ -99,6 +102,7 @@ struct PlayerControlsView: View {
                                 .keyboardShortcut(.leftArrow, modifiers: .command)
 
                                 Button(action: {
+                                    isSearchFieldFocused = false
                                     switch musicPlayer.playerState {
                                     case .playing:
                                         musicPlayer.pause()
@@ -119,6 +123,7 @@ struct PlayerControlsView: View {
                                 .keyboardShortcut(.space, modifiers: [])
 
                                 Button(action: {
+                                    isSearchFieldFocused = false
                                     musicPlayer.nextTrack()
                                 }) {
                                     Image(systemName: "forward.fill")
@@ -131,6 +136,7 @@ struct PlayerControlsView: View {
 
                             // Repeat button (right)
                             Button(action: {
+                                isSearchFieldFocused = false
                                 musicPlayer.toggleRepeat()
                             }) {
                                 Image(systemName: repeatIcon(for: musicPlayer.repeatMode))
@@ -201,6 +207,7 @@ struct PlayerControlsView: View {
                             HStack(spacing: 20) {
                                 // Shuffle button (left)
                                 Button(action: {
+                                    isSearchFieldFocused = false
                                     musicPlayer.toggleShuffle()
                                 }) {
                                     Image(systemName: "shuffle")
@@ -212,6 +219,7 @@ struct PlayerControlsView: View {
                                 // Main playback controls (center)
                                 HStack(spacing: 20) {
                                     Button(action: {
+                                        isSearchFieldFocused = false
                                         musicPlayer.previousTrack()
                                     }) {
                                         Image(systemName: "backward.fill")
@@ -222,6 +230,7 @@ struct PlayerControlsView: View {
                                     .keyboardShortcut(.leftArrow, modifiers: .command)
 
                                     Button(action: {
+                                        isSearchFieldFocused = false
                                         switch musicPlayer.playerState {
                                         case .playing:
                                             musicPlayer.pause()
@@ -242,6 +251,7 @@ struct PlayerControlsView: View {
                                     .keyboardShortcut(.space, modifiers: [])
 
                                     Button(action: {
+                                        isSearchFieldFocused = false
                                         musicPlayer.nextTrack()
                                     }) {
                                         Image(systemName: "forward.fill")
@@ -254,6 +264,7 @@ struct PlayerControlsView: View {
 
                                 // Repeat button (right)
                                 Button(action: {
+                                    isSearchFieldFocused = false
                                     musicPlayer.toggleRepeat()
                                 }) {
                                     Image(systemName: repeatIcon(for: musicPlayer.repeatMode))
@@ -490,6 +501,14 @@ struct ThemedSlider: View {
 }
 
 #Preview {
-    PlayerControlsView(musicPlayer: MusicPlayerManager(), playlistManager: PlaylistManager(), isCompact: false)
-        .frame(width: 800)
+    struct PreviewWrapper: View {
+        @FocusState private var isSearchFieldFocused: Bool
+
+        var body: some View {
+            PlayerControlsView(musicPlayer: MusicPlayerManager(), playlistManager: PlaylistManager(), isSearchFieldFocused: $isSearchFieldFocused, isCompact: false)
+                .frame(width: 800)
+        }
+    }
+
+    return PreviewWrapper()
 }

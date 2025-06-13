@@ -17,6 +17,7 @@ struct PlaylistSidebar: View {
     @Binding var showingPlaylistNamePopup: Bool
     @Binding var playlistNameForFiles: String
     @Binding var pendingFiles: [URL]
+    @FocusState.Binding var isSearchFieldFocused: Bool
     let isCompact: Bool
     @State private var isDragOver = false
     @State private var animationTrigger = false
@@ -33,6 +34,7 @@ struct PlaylistSidebar: View {
                 Spacer()
 
                 Button(action: {
+                    isSearchFieldFocused = false
                     showingAddPlaylistPopup = true
                     newPlaylistName = ""
                 }) {
@@ -95,6 +97,7 @@ struct PlaylistSidebar: View {
 
                     // Beautiful themed button
                     Button(action: {
+                        isSearchFieldFocused = false
                         showingAddPlaylistPopup = true
                         newPlaylistName = ""
                     }) {
@@ -139,7 +142,8 @@ struct PlaylistSidebar: View {
                         isSelected: playlistManager.selectedPlaylist?.id == playlist.id,
                         playlistManager: playlistManager,
                         showingImportPopup: $showingImportPopup,
-                        selectedPlaylistForImport: $selectedPlaylistForImport
+                        selectedPlaylistForImport: $selectedPlaylistForImport,
+                        isSearchFieldFocused: $isSearchFieldFocused
                     )
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -303,6 +307,7 @@ struct PlaylistRow: View {
     let playlistManager: PlaylistManager
     @Binding var showingImportPopup: Bool
     @Binding var selectedPlaylistForImport: Playlist?
+    @FocusState.Binding var isSearchFieldFocused: Bool
     @State private var isHovered = false
     @Environment(\.colorTheme) private var colorTheme
 
@@ -329,6 +334,7 @@ struct PlaylistRow: View {
                 HStack(spacing: 4) {
                     // Add content button
                     Button(action: {
+                        isSearchFieldFocused = false
                         selectedPlaylistForImport = playlist
                         showingImportPopup = true
                     }) {
@@ -341,6 +347,7 @@ struct PlaylistRow: View {
 
                     // Delete button
                     Button(action: {
+                        isSearchFieldFocused = false
                         playlistManager.deletePlaylist(playlist)
                     }) {
                         Image(systemName: "trash")
@@ -360,6 +367,7 @@ struct PlaylistRow: View {
             isHovered = hovering
         }
         .onTapGesture {
+            isSearchFieldFocused = false
             playlistManager.selectPlaylist(playlist)
         }
         .background(
@@ -402,16 +410,25 @@ struct PlaylistRow: View {
 
 
 #Preview {
-    PlaylistSidebar(
-        playlistManager: PlaylistManager(),
-        showingAddPlaylistPopup: .constant(false),
-        newPlaylistName: .constant(""),
-        showingImportPopup: .constant(false),
-        selectedPlaylistForImport: .constant(nil),
-        showingPlaylistNamePopup: .constant(false),
-        playlistNameForFiles: .constant(""),
-        pendingFiles: .constant([]),
-        isCompact: false
-    )
-    .frame(width: 250, height: 400)
+    struct PreviewWrapper: View {
+        @FocusState private var isSearchFieldFocused: Bool
+
+        var body: some View {
+            PlaylistSidebar(
+                playlistManager: PlaylistManager(),
+                showingAddPlaylistPopup: .constant(false),
+                newPlaylistName: .constant(""),
+                showingImportPopup: .constant(false),
+                selectedPlaylistForImport: .constant(nil),
+                showingPlaylistNamePopup: .constant(false),
+                playlistNameForFiles: .constant(""),
+                pendingFiles: .constant([]),
+                isSearchFieldFocused: $isSearchFieldFocused,
+                isCompact: false
+            )
+            .frame(width: 250, height: 400)
+        }
+    }
+
+    return PreviewWrapper()
 }

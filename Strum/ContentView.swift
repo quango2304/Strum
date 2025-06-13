@@ -23,6 +23,7 @@ struct ContentView: View {
     @State private var toastMessage = ""
     @State private var toastType: ToastView.ToastType = .success
     @State private var animationTrigger = false
+    @FocusState private var isSearchFieldFocused: Bool
 
     // Responsive breakpoint - switch to vertical layout when width < 1000
     private let responsiveBreakpoint: CGFloat = 1000
@@ -175,7 +176,7 @@ struct ContentView: View {
 
             // Player Controls - Only for desktop layout (compact has its own)
             if !isCompact {
-                PlayerControlsView(musicPlayer: musicPlayer, playlistManager: playlistManager, isCompact: isCompact)
+                PlayerControlsView(musicPlayer: musicPlayer, playlistManager: playlistManager, isSearchFieldFocused: $isSearchFieldFocused, isCompact: isCompact)
             }
         }
         .frame(minWidth: 600, minHeight: 500)
@@ -215,7 +216,7 @@ struct ContentView: View {
         VStack(spacing: 0) {
             // Main Content (Track List) - takes available space above player controls
             if let selectedPlaylist = playlistManager.selectedPlaylist {
-                TrackListView(playlist: selectedPlaylist, musicPlayer: musicPlayer)
+                TrackListView(playlist: selectedPlaylist, musicPlayer: musicPlayer, isSearchFieldFocused: $isSearchFieldFocused)
                     .environmentObject(playlistManager)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -223,7 +224,7 @@ struct ContentView: View {
             }
 
             // Player Controls - Always visible and not cut off
-            PlayerControlsView(musicPlayer: musicPlayer, playlistManager: playlistManager, isCompact: true)
+            PlayerControlsView(musicPlayer: musicPlayer, playlistManager: playlistManager, isSearchFieldFocused: $isSearchFieldFocused, isCompact: true)
 
             // Playlist Sidebar (at bottom in compact mode)
             compactSidebar()
@@ -240,7 +241,7 @@ struct ContentView: View {
 
             // Main Content
             if let selectedPlaylist = playlistManager.selectedPlaylist {
-                TrackListView(playlist: selectedPlaylist, musicPlayer: musicPlayer)
+                TrackListView(playlist: selectedPlaylist, musicPlayer: musicPlayer, isSearchFieldFocused: $isSearchFieldFocused)
                     .environmentObject(playlistManager)
             } else {
                 emptyStateView(isCompact: false)
@@ -292,6 +293,7 @@ struct ContentView: View {
             showingPlaylistNamePopup: $showingPlaylistNamePopup,
             playlistNameForFiles: $playlistNameForFiles,
             pendingFiles: $pendingFiles,
+            isSearchFieldFocused: $isSearchFieldFocused,
             isCompact: true
         )
         .frame(height: 180)
@@ -308,6 +310,7 @@ struct ContentView: View {
             showingPlaylistNamePopup: $showingPlaylistNamePopup,
             playlistNameForFiles: $playlistNameForFiles,
             pendingFiles: $pendingFiles,
+            isSearchFieldFocused: $isSearchFieldFocused,
             isCompact: false
         )
     }

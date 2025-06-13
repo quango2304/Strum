@@ -85,7 +85,7 @@ enum ColorTheme: String, CaseIterable, Identifiable {
 
 // MARK: - Preferences Manager
 class PreferencesManager: ObservableObject {
-    @Published var colorTheme: ColorTheme = .red {
+    @Published var colorTheme: ColorTheme = .tangerine {
         didSet {
             savePreferences()
         }
@@ -109,10 +109,6 @@ class PreferencesManager: ObservableObject {
            let theme = ColorTheme(rawValue: savedTheme) {
             colorTheme = theme
         }
-    }
-    
-    func resetToDefaults() {
-        colorTheme = .red
     }
 }
 
