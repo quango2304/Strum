@@ -253,7 +253,7 @@ struct Track: Identifiable, Codable, Hashable {
 }
 
 // MARK: - Playlist Model
-class Playlist: ObservableObject, Identifiable, Codable {
+class Playlist: ObservableObject, Identifiable, Codable, Equatable {
     let id = UUID()
     @Published var name: String
     @Published var tracks: [Track]
@@ -297,6 +297,11 @@ class Playlist: ObservableObject, Identifiable, Codable {
     func moveTrack(from source: IndexSet, to destination: Int) {
         tracks.move(fromOffsets: source, toOffset: destination)
     }
+
+    // MARK: - Equatable
+    static func == (lhs: Playlist, rhs: Playlist) -> Bool {
+        return lhs.id == rhs.id
+    }
 }
 
 // MARK: - Player State
@@ -306,6 +311,19 @@ enum PlayerState {
     case paused
 }
 
+// MARK: - Shuffle Mode
+enum ShuffleMode {
+    case off
+    case tracks
+}
+
+// MARK: - Repeat Mode
+enum RepeatMode {
+    case off
+    case playlist
+    case track
+}
+
 // MARK: - Music Player Manager
 class MusicPlayerManager: ObservableObject {
     @Published var currentTrack: Track?
@@ -313,9 +331,13 @@ class MusicPlayerManager: ObservableObject {
     @Published var playerState: PlayerState = .stopped
     @Published var currentTime: TimeInterval = 0
     @Published var volume: Float = 0.5
-    
+    @Published var shuffleMode: ShuffleMode = .off
+    @Published var repeatMode: RepeatMode = .off
+
     private var audioPlayer: AVAudioPlayer?
     private var timer: Timer?
+    private var shuffledIndices: [Int] = []
+    private var currentShuffleIndex: Int = 0
     
     init() {
         // No audio session setup needed on macOS
@@ -324,6 +346,16 @@ class MusicPlayerManager: ObservableObject {
     func play(track: Track, in playlist: Playlist) {
         currentTrack = track
         currentPlaylist = playlist
+
+        // Update shuffle indices if needed
+        if shuffleMode == .tracks && (shuffledIndices.isEmpty || currentPlaylist != playlist) {
+            generateShuffledIndices()
+        }
+
+        // Update current shuffle index
+        if shuffleMode == .tracks, let currentIndex = playlist.tracks.firstIndex(of: track) {
+            currentShuffleIndex = shuffledIndices.firstIndex(of: currentIndex) ?? 0
+        }
 
         // Start accessing security-scoped resource
         guard track.startAccessingSecurityScopedResource() else {
@@ -384,25 +416,120 @@ class MusicPlayerManager: ObservableObject {
         volume = newVolume
         audioPlayer?.volume = newVolume
     }
+
+    func toggleShuffle() {
+        shuffleMode = shuffleMode == .off ? .tracks : .off
+        if shuffleMode == .tracks {
+            generateShuffledIndices()
+        } else {
+            shuffledIndices.removeAll()
+            currentShuffleIndex = 0
+        }
+    }
+
+    func toggleRepeat() {
+        switch repeatMode {
+        case .off:
+            repeatMode = .playlist
+        case .playlist:
+            repeatMode = .track
+        case .track:
+            repeatMode = .off
+        }
+    }
+
+    private func generateShuffledIndices() {
+        guard let playlist = currentPlaylist else { return }
+        shuffledIndices = Array(0..<playlist.tracks.count).shuffled()
+
+        // Find current track in shuffled indices
+        if let currentTrack = currentTrack,
+           let currentIndex = playlist.tracks.firstIndex(of: currentTrack),
+           let shuffleIndex = shuffledIndices.firstIndex(of: currentIndex) {
+            currentShuffleIndex = shuffleIndex
+        }
+    }
     
     func nextTrack() {
-        guard let playlist = currentPlaylist,
-              let currentTrack = currentTrack,
-              let currentIndex = playlist.tracks.firstIndex(of: currentTrack),
-              currentIndex < playlist.tracks.count - 1 else { return }
-        
-        let nextTrack = playlist.tracks[currentIndex + 1]
-        play(track: nextTrack, in: playlist)
+        guard let playlist = currentPlaylist else { return }
+
+        // Handle repeat track mode
+        if repeatMode == .track, let currentTrack = currentTrack {
+            play(track: currentTrack, in: playlist)
+            return
+        }
+
+        var nextTrack: Track?
+
+        if shuffleMode == .tracks && !shuffledIndices.isEmpty {
+            // Shuffle mode
+            currentShuffleIndex += 1
+            if currentShuffleIndex >= shuffledIndices.count {
+                if repeatMode == .playlist {
+                    currentShuffleIndex = 0
+                } else {
+                    return // End of shuffled playlist
+                }
+            }
+            let nextIndex = shuffledIndices[currentShuffleIndex]
+            nextTrack = playlist.tracks[nextIndex]
+        } else {
+            // Normal sequential mode
+            guard let currentTrack = currentTrack,
+                  let currentIndex = playlist.tracks.firstIndex(of: currentTrack) else { return }
+
+            let nextIndex = currentIndex + 1
+            if nextIndex < playlist.tracks.count {
+                nextTrack = playlist.tracks[nextIndex]
+            } else if repeatMode == .playlist {
+                nextTrack = playlist.tracks.first
+            }
+        }
+
+        if let track = nextTrack {
+            play(track: track, in: playlist)
+        }
     }
     
     func previousTrack() {
-        guard let playlist = currentPlaylist,
-              let currentTrack = currentTrack,
-              let currentIndex = playlist.tracks.firstIndex(of: currentTrack),
-              currentIndex > 0 else { return }
-        
-        let previousTrack = playlist.tracks[currentIndex - 1]
-        play(track: previousTrack, in: playlist)
+        guard let playlist = currentPlaylist else { return }
+
+        // Handle repeat track mode
+        if repeatMode == .track, let currentTrack = currentTrack {
+            play(track: currentTrack, in: playlist)
+            return
+        }
+
+        var previousTrack: Track?
+
+        if shuffleMode == .tracks && !shuffledIndices.isEmpty {
+            // Shuffle mode
+            currentShuffleIndex -= 1
+            if currentShuffleIndex < 0 {
+                if repeatMode == .playlist {
+                    currentShuffleIndex = shuffledIndices.count - 1
+                } else {
+                    return // Beginning of shuffled playlist
+                }
+            }
+            let previousIndex = shuffledIndices[currentShuffleIndex]
+            previousTrack = playlist.tracks[previousIndex]
+        } else {
+            // Normal sequential mode
+            guard let currentTrack = currentTrack,
+                  let currentIndex = playlist.tracks.firstIndex(of: currentTrack) else { return }
+
+            let previousIndex = currentIndex - 1
+            if previousIndex >= 0 {
+                previousTrack = playlist.tracks[previousIndex]
+            } else if repeatMode == .playlist {
+                previousTrack = playlist.tracks.last
+            }
+        }
+
+        if let track = previousTrack {
+            play(track: track, in: playlist)
+        }
     }
     
     private func startTimer() {

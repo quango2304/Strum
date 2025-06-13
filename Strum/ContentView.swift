@@ -17,47 +17,110 @@ struct ContentView: View {
     @State private var showingPlaylistNamePopup = false
     @State private var playlistNameForFiles = ""
     @State private var pendingFiles: [URL] = []
+    @State private var showingToast = false
+    @State private var toastMessage = ""
+    @State private var toastType: ToastView.ToastType = .success
+
+    // Responsive breakpoint - switch to vertical layout when width < 1000
+    private let responsiveBreakpoint: CGFloat = 1000
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Main Content Area
-            HStack(spacing: 0) {
-                // Sidebar
-                PlaylistSidebar(
-                    playlistManager: playlistManager,
-                    showingAddPlaylistPopup: $showingAddPlaylistPopup,
-                    newPlaylistName: $newPlaylistName,
-                    showingImportPopup: $showingImportPopup,
-                    selectedPlaylistForImport: $selectedPlaylistForImport,
-                    showingPlaylistNamePopup: $showingPlaylistNamePopup,
-                    playlistNameForFiles: $playlistNameForFiles,
-                    pendingFiles: $pendingFiles
-                )
+        GeometryReader { geometry in
+            let isCompact = geometry.size.width < responsiveBreakpoint
 
-                Divider()
+            VStack(spacing: 0) {
+                // Main Content Area - Responsive Layout
+                if isCompact {
+                    // Compact Layout: Vertical stack (track list on top, player controls in middle, playlist at bottom)
+                    VStack(spacing: 0) {
+                        // Main Content (Track List) - takes available space above player controls
+                        if let selectedPlaylist = playlistManager.selectedPlaylist {
+                            TrackListView(playlist: selectedPlaylist, musicPlayer: musicPlayer)
+                                .environmentObject(playlistManager)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            VStack {
+                                Image(systemName: "music.note.list")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(.secondary)
 
-                // Main Content
-                if let selectedPlaylist = playlistManager.selectedPlaylist {
-                    TrackListView(playlist: selectedPlaylist, musicPlayer: musicPlayer)
-                        .environmentObject(playlistManager)
-                } else {
-                    VStack {
-                        Image(systemName: "music.note.list")
-                            .font(.system(size: 48))
-                            .foregroundColor(.secondary)
+                                Text("Select a playlist to view tracks")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
 
-                        Text("Select a playlist to view tracks")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
+                        // Player Controls - Always visible and not cut off
+                        PlayerControlsView(musicPlayer: musicPlayer, isCompact: isCompact)
+
+                        // Playlist Sidebar (at bottom in compact mode)
+                        PlaylistSidebar(
+                            playlistManager: playlistManager,
+                            showingAddPlaylistPopup: $showingAddPlaylistPopup,
+                            newPlaylistName: $newPlaylistName,
+                            showingImportPopup: $showingImportPopup,
+                            selectedPlaylistForImport: $selectedPlaylistForImport,
+                            showingPlaylistNamePopup: $showingPlaylistNamePopup,
+                            playlistNameForFiles: $playlistNameForFiles,
+                            pendingFiles: $pendingFiles,
+                            isCompact: true
+                        )
+                        .frame(height: 180) // Reduced height for compact playlist view
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    // Desktop Layout: Horizontal stack (sidebar on left, track list on right)
+                    HStack(spacing: 0) {
+                        // Sidebar
+                        PlaylistSidebar(
+                            playlistManager: playlistManager,
+                            showingAddPlaylistPopup: $showingAddPlaylistPopup,
+                            newPlaylistName: $newPlaylistName,
+                            showingImportPopup: $showingImportPopup,
+                            selectedPlaylistForImport: $selectedPlaylistForImport,
+                            showingPlaylistNamePopup: $showingPlaylistNamePopup,
+                            playlistNameForFiles: $playlistNameForFiles,
+                            pendingFiles: $pendingFiles,
+                            isCompact: false
+                        )
+
+                        Divider()
+
+                        // Main Content
+                        if let selectedPlaylist = playlistManager.selectedPlaylist {
+                            TrackListView(playlist: selectedPlaylist, musicPlayer: musicPlayer)
+                                .environmentObject(playlistManager)
+                        } else {
+                            VStack {
+                                Image(systemName: "music.note.list")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(.secondary)
+
+                                Text("Select a playlist to view tracks")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
+                    }
+                }
+
+                // Player Controls - Only for desktop layout (compact has its own)
+                if !isCompact {
+                    PlayerControlsView(musicPlayer: musicPlayer, isCompact: isCompact)
                 }
             }
-
-            // Player Controls
-            PlayerControlsView(musicPlayer: musicPlayer)
         }
-        .frame(minWidth: 800, minHeight: 600)
+        .frame(minWidth: 600, minHeight: 500) // Reduced minimum size for better responsiveness
+        .toast(isShowing: $showingToast, message: toastMessage, type: toastType)
+        .onAppear {
+            // Set up toast callback for import success
+            playlistManager.onImportSuccess = { message in
+                toastMessage = message
+                toastType = .success
+                showingToast = true
+            }
+        }
         .overlay(
             // Add Playlist Popup - Centered in entire app window
             Group {
@@ -70,6 +133,11 @@ struct ContentView: View {
                                 _ = playlistManager.createPlaylist(name: newPlaylistName)
                                 newPlaylistName = ""
                                 showingAddPlaylistPopup = false
+
+                                // Show success toast
+                                toastMessage = "Playlist created successfully"
+                                toastType = .success
+                                showingToast = true
                             }
                         }
                     )
@@ -113,6 +181,12 @@ struct ContentView: View {
                             // Save the playlists to persist the changes
                             playlistManager.savePlaylists()
 
+                            // Show success toast
+                            let fileCount = pendingFiles.count
+                            toastMessage = fileCount == 1 ? "1 file imported successfully" : "\(fileCount) files imported successfully"
+                            toastType = .success
+                            showingToast = true
+
                             // Clear state and close popup
                             pendingFiles = []
                             showingPlaylistNamePopup = false
@@ -134,54 +208,68 @@ struct AddPlaylistPopup: View {
 
     var body: some View {
         ZStack {
-            // Background overlay
-            Color.black.opacity(0.3)
+            // Background overlay with blur
+            DesignSystem.Colors.overlay
                 .ignoresSafeArea()
                 .onTapGesture {
                     isPresented = false
                 }
 
             // Popup content
-            VStack(spacing: 20) {
-                // Title
-                Text("New Playlist")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+            VStack(spacing: DesignSystem.Spacing.xl) {
+                // Icon and Title
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    Image(systemName: "music.note.list")
+                        .font(.system(size: 40))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.accentColor, .blue],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+
+                    Text("New Playlist")
+                        .font(DesignSystem.Typography.title2)
+                        .foregroundColor(.primary)
+                }
 
                 // Text field
                 TextField("Playlist Name", text: $playlistName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .font(DesignSystem.Typography.body)
                     .focused($isTextFieldFocused)
                     .onSubmit {
                         onSave()
                     }
 
                 // Buttons
-                HStack(spacing: 12) {
+                HStack(spacing: DesignSystem.Spacing.md) {
                     Button("Cancel") {
                         isPresented = false
                     }
+                    .buttonStyle(SecondaryButtonStyle())
                     .keyboardShortcut(.escape)
 
                     Button("Create") {
                         onSave()
                     }
+                    .buttonStyle(PrimaryButtonStyle())
                     .keyboardShortcut(.return)
-                    .buttonStyle(.borderedProminent)
                     .disabled(playlistName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
-            .padding(24)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(NSColor.controlBackgroundColor))
-                    .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
-            )
-            .frame(width: 300)
+            .cardStyle(padding: DesignSystem.Spacing.xxxl, cornerRadius: DesignSystem.CornerRadius.xl)
+            .frame(width: 320)
         }
         .onAppear {
             isTextFieldFocused = true
         }
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.9).combined(with: .opacity),
+            removal: .scale(scale: 1.1).combined(with: .opacity)
+        ))
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isPresented)
     }
 }
 

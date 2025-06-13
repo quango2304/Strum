@@ -22,18 +22,22 @@ struct TrackListView: View {
             // Header
             HStack {
                 Text(playlist.name)
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
+                    .font(DesignSystem.Typography.title2)
+                    .foregroundColor(.primary)
+
                 Spacer()
-                
-                Text("\(playlist.tracks.count) songs")
-                    .font(.subheadline)
+
+                Text("\(playlist.tracks.count) song\(playlist.tracks.count == 1 ? "" : "s")")
+                    .font(DesignSystem.Typography.callout)
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color(NSColor.controlBackgroundColor))
+            .padding(.horizontal, DesignSystem.Spacing.xl)
+            .padding(.vertical, DesignSystem.Spacing.lg)
+            .background(
+                Rectangle()
+                    .fill(DesignSystem.Colors.surface)
+                    .shadow(color: DesignSystem.Shadow.light, radius: 1, x: 0, y: 1)
+            )
             
             Divider()
             
@@ -289,17 +293,19 @@ struct TrackRow: View {
                     Image(nsImage: artwork)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 24, height: 24)
-                        .clipShape(RoundedRectangle(cornerRadius: 2))
+                        .frame(width: 28, height: 28)
+                        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.sm))
+                        .shadow(color: DesignSystem.Shadow.light, radius: 1, x: 0, y: 1)
                 } else {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.secondary.opacity(0.3))
-                        .frame(width: 24, height: 24)
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.sm)
+                        .fill(DesignSystem.Colors.surfaceSecondary)
+                        .frame(width: 28, height: 28)
                         .overlay(
                             Image(systemName: "music.note")
                                 .font(.system(size: 10))
                                 .foregroundColor(.secondary)
                         )
+                        .shadow(color: DesignSystem.Shadow.light, radius: 1, x: 0, y: 1)
                 }
             }
 
@@ -330,33 +336,33 @@ struct TrackRow: View {
             
             // Title
             Text(track.title)
-                .font(.system(size: 13))
+                .font(DesignSystem.Typography.trackTitle)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .foregroundColor(isPlaying || isPaused ? .accentColor : .primary)
-            
+
             // Artist
             Text(track.artist ?? "Unknown Artist")
-                .font(.system(size: 13))
+                .font(DesignSystem.Typography.trackSubtitle)
                 .lineLimit(1)
                 .frame(width: 150, alignment: .leading)
                 .foregroundColor(.secondary)
-            
+
             // Album
             Text(track.album ?? "Unknown Album")
-                .font(.system(size: 13))
+                .font(DesignSystem.Typography.trackSubtitle)
                 .lineLimit(1)
                 .frame(width: 150, alignment: .leading)
                 .foregroundColor(.secondary)
-            
+
             // Duration
             Text(formatDuration(track.duration))
-                .font(.system(size: 13))
+                .font(DesignSystem.Typography.trackSubtitle)
                 .frame(width: 60, alignment: .trailing)
                 .foregroundColor(.secondary)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 6)
+        .padding(.horizontal, DesignSystem.Spacing.xl)
+        .padding(.vertical, DesignSystem.Spacing.sm)
         .contentShape(Rectangle())
         .onHover { hovering in
             isHovered = hovering
@@ -366,7 +372,8 @@ struct TrackRow: View {
         }
         .background(
             Rectangle()
-                .fill(isHovered ? Color.primary.opacity(0.05) : Color.clear)
+                .fill(isHovered ? DesignSystem.Colors.hoverBackground : Color.clear)
+                .animation(.easeInOut(duration: 0.15), value: isHovered)
         )
     }
     

@@ -19,6 +19,9 @@ extension UTType {
 class PlaylistManager: ObservableObject {
     @Published var playlists: [Playlist] = []
     @Published var selectedPlaylist: Playlist?
+
+    // Callback for showing toast notifications
+    var onImportSuccess: ((String) -> Void)?
     
     private let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     private var playlistsURL: URL {
@@ -87,6 +90,10 @@ class PlaylistManager: ObservableObject {
                     playlist.addTrack(track)
                 }
                 self.savePlaylists()
+
+                // Show success toast
+                let message = tracks.count == 1 ? "1 file imported successfully" : "\(tracks.count) files imported successfully"
+                self.onImportSuccess?(message)
             }
         }
     }
@@ -116,6 +123,10 @@ class PlaylistManager: ObservableObject {
                     playlist.addTrack(track)
                 }
                 self.savePlaylists()
+
+                // Show success toast
+                let message = tracks.count == 1 ? "1 file imported successfully" : "\(tracks.count) files imported successfully"
+                self.onImportSuccess?(message)
             }
         }
     }
@@ -141,6 +152,10 @@ class PlaylistManager: ObservableObject {
             }
             print("Saving playlists")
             self.savePlaylists()
+
+            // Show success toast
+            let message = tracks.count == 1 ? "1 file imported successfully" : "\(tracks.count) files imported successfully"
+            self.onImportSuccess?(message)
         }
     }
 

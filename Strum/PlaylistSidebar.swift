@@ -17,6 +17,7 @@ struct PlaylistSidebar: View {
     @Binding var showingPlaylistNamePopup: Bool
     @Binding var playlistNameForFiles: String
     @Binding var pendingFiles: [URL]
+    let isCompact: Bool
     @State private var isDragOver = false
 
     var body: some View {
@@ -24,7 +25,7 @@ struct PlaylistSidebar: View {
             // Header
             HStack {
                 Text("Playlists")
-                    .font(.headline)
+                    .font(DesignSystem.Typography.headline)
                     .foregroundColor(.primary)
 
                 Spacer()
@@ -34,15 +35,18 @@ struct PlaylistSidebar: View {
                     newPlaylistName = ""
                 }) {
                     Image(systemName: "plus.circle.fill")
-                        .foregroundColor(.accentColor)
-                        .font(.system(size: 16))
+                        .foregroundColor(.white)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .buttonStyle(IconButtonStyle(size: 28, isActive: true))
                 .help("Add Playlist")
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color(NSColor.controlBackgroundColor))
+            .padding(.horizontal, DesignSystem.Spacing.md)
+            .padding(.vertical, DesignSystem.Spacing.sm)
+            .background(
+                Rectangle()
+                    .fill(DesignSystem.Colors.surface)
+                    .shadow(color: DesignSystem.Shadow.light, radius: 1, x: 0, y: 1)
+            )
 
             Divider()
 
@@ -122,7 +126,12 @@ struct PlaylistSidebar: View {
                 .listStyle(SidebarListStyle())
             }
         }
-        .frame(minWidth: 200, maxWidth: 300)
+        .frame(
+            minWidth: isCompact ? nil : 200,
+            maxWidth: isCompact ? .infinity : 300,
+            minHeight: isCompact ? 150 : nil,
+            maxHeight: isCompact ? 200 : .infinity
+        )
         .overlay(
             // Beautiful blur drag overlay
             Group {
@@ -321,7 +330,8 @@ struct PlaylistRow: View {
         selectedPlaylistForImport: .constant(nil),
         showingPlaylistNamePopup: .constant(false),
         playlistNameForFiles: .constant(""),
-        pendingFiles: .constant([])
+        pendingFiles: .constant([]),
+        isCompact: false
     )
     .frame(width: 250, height: 400)
 }
