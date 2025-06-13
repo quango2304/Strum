@@ -38,6 +38,24 @@ struct StrumApp: App {
                 }
                 .keyboardShortcut(",", modifiers: .command)
             }
+
+            // Music Player Controls Menu
+            CommandMenu("Playback") {
+                Button("Play/Pause") {
+                    // This will be handled by the PlayerControlsView
+                }
+                .keyboardShortcut(.space, modifiers: [])
+
+                Button("Previous Track") {
+                    // This will be handled by the PlayerControlsView
+                }
+                .keyboardShortcut(.leftArrow, modifiers: .command)
+
+                Button("Next Track") {
+                    // This will be handled by the PlayerControlsView
+                }
+                .keyboardShortcut(.rightArrow, modifiers: .command)
+            }
         }
 
         // Preferences Window

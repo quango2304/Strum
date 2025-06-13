@@ -84,6 +84,7 @@ struct PlayerControlsView: View {
                                     .foregroundColor(musicPlayer.shuffleMode == .tracks ? .white : .secondary)
                             }
                             .buttonStyle(ThemedIconButtonStyle(size: 28, isActive: musicPlayer.shuffleMode == .tracks, theme: colorTheme))
+                            .keyboardShortcut("s", modifiers: .command)
 
                             // Main playback controls (center)
                             HStack(spacing: 16) {
@@ -95,6 +96,7 @@ struct PlayerControlsView: View {
                                 }
                                 .buttonStyle(ThemedIconButtonStyle(size: 32, theme: colorTheme))
                                 .disabled(musicPlayer.currentTrack == nil)
+                                .keyboardShortcut(.leftArrow, modifiers: .command)
 
                                 Button(action: {
                                     switch musicPlayer.playerState {
@@ -114,6 +116,7 @@ struct PlayerControlsView: View {
                                 }
                                 .buttonStyle(ThemedIconButtonStyle(size: 44, isActive: true, theme: colorTheme, useGradient: true))
                                 .disabled(musicPlayer.currentTrack == nil && playlistManager.selectedPlaylist?.tracks.isEmpty != false)
+                                .keyboardShortcut(.space, modifiers: [])
 
                                 Button(action: {
                                     musicPlayer.nextTrack()
@@ -123,6 +126,7 @@ struct PlayerControlsView: View {
                                 }
                                 .buttonStyle(ThemedIconButtonStyle(size: 32, theme: colorTheme))
                                 .disabled(musicPlayer.currentTrack == nil)
+                                .keyboardShortcut(.rightArrow, modifiers: .command)
                             }
 
                             // Repeat button (right)
@@ -133,6 +137,7 @@ struct PlayerControlsView: View {
                                     .foregroundColor(musicPlayer.repeatMode != .off ? .white : .secondary)
                             }
                             .buttonStyle(ThemedIconButtonStyle(size: 28, isActive: musicPlayer.repeatMode != .off, theme: colorTheme))
+                            .keyboardShortcut("r", modifiers: .command)
                         }
 
                         // Progress Bar (full width in compact mode)
@@ -202,6 +207,7 @@ struct PlayerControlsView: View {
                                         .foregroundColor(musicPlayer.shuffleMode == .tracks ? .white : .secondary)
                                 }
                                 .buttonStyle(ThemedIconButtonStyle(size: 32, isActive: musicPlayer.shuffleMode == .tracks, theme: colorTheme))
+                                .keyboardShortcut("s", modifiers: .command)
 
                                 // Main playback controls (center)
                                 HStack(spacing: 20) {
@@ -213,6 +219,7 @@ struct PlayerControlsView: View {
                                     }
                                     .buttonStyle(ThemedIconButtonStyle(size: 36, theme: colorTheme))
                                     .disabled(musicPlayer.currentTrack == nil)
+                                    .keyboardShortcut(.leftArrow, modifiers: .command)
 
                                     Button(action: {
                                         switch musicPlayer.playerState {
@@ -232,6 +239,7 @@ struct PlayerControlsView: View {
                                     }
                                     .buttonStyle(ThemedIconButtonStyle(size: 52, isActive: true, theme: colorTheme, useGradient: true))
                                     .disabled(musicPlayer.currentTrack == nil && playlistManager.selectedPlaylist?.tracks.isEmpty != false)
+                                    .keyboardShortcut(.space, modifiers: [])
 
                                     Button(action: {
                                         musicPlayer.nextTrack()
@@ -241,6 +249,7 @@ struct PlayerControlsView: View {
                                     }
                                     .buttonStyle(ThemedIconButtonStyle(size: 36, theme: colorTheme))
                                     .disabled(musicPlayer.currentTrack == nil)
+                                    .keyboardShortcut(.rightArrow, modifiers: .command)
                                 }
 
                                 // Repeat button (right)
@@ -251,6 +260,7 @@ struct PlayerControlsView: View {
                                         .foregroundColor(musicPlayer.repeatMode != .off ? .white : .secondary)
                                 }
                                 .buttonStyle(ThemedIconButtonStyle(size: 32, isActive: musicPlayer.repeatMode != .off, theme: colorTheme))
+                                .keyboardShortcut("r", modifiers: .command)
                             }
 
                             Spacer()

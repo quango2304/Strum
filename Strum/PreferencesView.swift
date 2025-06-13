@@ -106,6 +106,10 @@ struct PreferencesView: View {
             )
             .frame(width: 480, height: 520)
         }
+        .onKeyPress(.escape) {
+            dismiss()
+            return .handled
+        }
     }
 }
 

@@ -64,7 +64,7 @@ struct TrackListView: View {
 
                 Spacer()
 
-                // Right side: Beautiful search field
+                // Right side: Beautiful search field with improved visibility
                 HStack(spacing: DesignSystem.Spacing.sm) {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
@@ -91,15 +91,15 @@ struct TrackListView: View {
                 .padding(.vertical, DesignSystem.Spacing.sm)
                 .background(
                     RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
-                        .fill(.ultraThinMaterial)
-                        .opacity(0.8)
+                        .fill(.regularMaterial)
+                        .opacity(0.9)
                         .overlay(
                             RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
                                 .stroke(
                                     searchText.isEmpty ?
-                                    Color.clear :
-                                    DesignSystem.colors(for: colorTheme).primary.opacity(0.3),
-                                    lineWidth: 1
+                                    DesignSystem.colors(for: colorTheme).primary.opacity(0.2) :
+                                    DesignSystem.colors(for: colorTheme).primary.opacity(0.5),
+                                    lineWidth: 1.5
                                 )
                         )
                 )
@@ -269,6 +269,12 @@ struct TrackListView: View {
                                     }
                                 }
                             }
+
+                            // Add padding at the bottom to ensure last track is fully visible
+                            Color.clear
+                                .frame(height: DesignSystem.Spacing.xl)
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
                         }
                         .listStyle(PlainListStyle())
                     }
@@ -284,7 +290,6 @@ struct TrackListView: View {
                 DesignSystem.colors(for: colorTheme).sectionBackground
             }
         )
-        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg))
         .overlay(
             // Beautiful blur drag overlay
             Group {
@@ -472,8 +477,9 @@ struct TrackRow: View {
                         .frame(width: 28, height: 28)
                         .overlay(
                             Image(systemName: "music.note")
-                                .font(.system(size: 10))
-                                .foregroundColor(.secondary)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.primary)
+                                .opacity(0.8)
                         )
                         .shadow(color: DesignSystem.Shadow.light, radius: 1, x: 0, y: 1)
                 }

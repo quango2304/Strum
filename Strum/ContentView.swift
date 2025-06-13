@@ -27,138 +27,24 @@ struct ContentView: View {
     // Responsive breakpoint - switch to vertical layout when width < 1000
     private let responsiveBreakpoint: CGFloat = 1000
 
+    // MARK: - Computed Properties
+    private var titleGradient: LinearGradient {
+        LinearGradient(
+            colors: colorTheme.gradientColors,
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+
+    private var themedColors: DesignSystem.ThemedColors {
+        DesignSystem.colors(for: colorTheme)
+    }
+
     var body: some View {
         GeometryReader { geometry in
             let isCompact = geometry.size.width < responsiveBreakpoint
 
-            VStack(spacing: 0) {
-                // Main Content Area - Responsive Layout
-                if isCompact {
-                    // Compact Layout: Vertical stack (track list on top, player controls in middle, playlist at bottom)
-                    VStack(spacing: 0) {
-                        // Main Content (Track List) - takes available space above player controls
-                        if let selectedPlaylist = playlistManager.selectedPlaylist {
-                            TrackListView(playlist: selectedPlaylist, musicPlayer: musicPlayer)
-                                .environmentObject(playlistManager)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        } else {
-                            // Beautiful themed empty state for compact layout
-                            VStack(spacing: DesignSystem.Spacing.xl) {
-                                Spacer()
-
-                                Image(systemName: "music.note.list")
-                                    .font(.system(size: 56, weight: .light))
-                                    .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
-                                    .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 6, x: 0, y: 3)
-                                    .scaleEffect(animationTrigger ? 1.05 : 1.0)
-                                    .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animationTrigger)
-
-                                VStack(spacing: DesignSystem.Spacing.sm) {
-                                    Text("Select a Playlist")
-                                        .font(DesignSystem.Typography.title2)
-                                        .fontWeight(.bold)
-                                        .foregroundStyle(
-                                            LinearGradient(
-                                                colors: colorTheme.gradientColors,
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-
-                                    Text("Choose a playlist from the sidebar to view its tracks")
-                                        .font(DesignSystem.Typography.callout)
-                                        .foregroundColor(.secondary)
-                                        .multilineTextAlignment(.center)
-                                        .opacity(0.8)
-                                }
-
-                                Spacer()
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        }
-
-                        // Player Controls - Always visible and not cut off
-                        PlayerControlsView(musicPlayer: musicPlayer, playlistManager: playlistManager, isCompact: isCompact)
-
-                        // Playlist Sidebar (at bottom in compact mode)
-                        PlaylistSidebar(
-                            playlistManager: playlistManager,
-                            showingAddPlaylistPopup: $showingAddPlaylistPopup,
-                            newPlaylistName: $newPlaylistName,
-                            showingImportPopup: $showingImportPopup,
-                            selectedPlaylistForImport: $selectedPlaylistForImport,
-                            showingPlaylistNamePopup: $showingPlaylistNamePopup,
-                            playlistNameForFiles: $playlistNameForFiles,
-                            pendingFiles: $pendingFiles,
-                            isCompact: true
-                        )
-                        .frame(height: 180) // Reduced height for compact playlist view
-                    }
-                } else {
-                    // Desktop Layout: Horizontal stack (sidebar on left, track list on right)
-                    HStack(spacing: 0) {
-                        // Sidebar
-                        PlaylistSidebar(
-                            playlistManager: playlistManager,
-                            showingAddPlaylistPopup: $showingAddPlaylistPopup,
-                            newPlaylistName: $newPlaylistName,
-                            showingImportPopup: $showingImportPopup,
-                            selectedPlaylistForImport: $selectedPlaylistForImport,
-                            showingPlaylistNamePopup: $showingPlaylistNamePopup,
-                            playlistNameForFiles: $playlistNameForFiles,
-                            pendingFiles: $pendingFiles,
-                            isCompact: false
-                        )
-
-                        Divider()
-
-                        // Main Content
-                        if let selectedPlaylist = playlistManager.selectedPlaylist {
-                            TrackListView(playlist: selectedPlaylist, musicPlayer: musicPlayer)
-                                .environmentObject(playlistManager)
-                        } else {
-                            // Beautiful themed empty state for desktop layout
-                            VStack(spacing: DesignSystem.Spacing.xl) {
-                                Spacer()
-
-                                Image(systemName: "music.note.list")
-                                    .font(.system(size: 72, weight: .light))
-                                    .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
-                                    .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 8, x: 0, y: 4)
-                                    .scaleEffect(animationTrigger ? 1.05 : 1.0)
-                                    .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animationTrigger)
-
-                                VStack(spacing: DesignSystem.Spacing.md) {
-                                    Text("Select a Playlist")
-                                        .font(DesignSystem.Typography.title)
-                                        .fontWeight(.bold)
-                                        .foregroundStyle(
-                                            LinearGradient(
-                                                colors: colorTheme.gradientColors,
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-
-                                    Text("Choose a playlist from the sidebar to view its tracks")
-                                        .font(DesignSystem.Typography.headline)
-                                        .foregroundColor(.secondary)
-                                        .multilineTextAlignment(.center)
-                                        .opacity(0.8)
-                                }
-
-                                Spacer()
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        }
-                    }
-                }
-
-                // Player Controls - Only for desktop layout (compact has its own)
-                if !isCompact {
-                    PlayerControlsView(musicPlayer: musicPlayer, playlistManager: playlistManager, isCompact: isCompact)
-                }
-            }
+            mainContentView(isCompact: isCompact)
         }
         .frame(minWidth: 600, minHeight: 500) // Reduced minimum size for better responsiveness
         .background(
@@ -254,6 +140,273 @@ struct ContentView: View {
                 }
             }
         )
+        .onKeyPress(.escape) {
+            // Global ESC key handling to close any open popup
+            if showingAddPlaylistPopup {
+                showingAddPlaylistPopup = false
+                return .handled
+            }
+            if showingImportPopup {
+                showingImportPopup = false
+                return .handled
+            }
+            if showingPlaylistNamePopup {
+                showingPlaylistNamePopup = false
+                return .handled
+            }
+            if preferencesManager.showPreferences {
+                preferencesManager.showPreferences = false
+                return .handled
+            }
+            return .ignored
+        }
+    }
+
+    // MARK: - View Components
+    @ViewBuilder
+    private func mainContentView(isCompact: Bool) -> some View {
+        VStack(spacing: 0) {
+            // Main Content Area - Responsive Layout
+            if isCompact {
+                compactLayout()
+            } else {
+                desktopLayout()
+            }
+
+            // Player Controls - Only for desktop layout (compact has its own)
+            if !isCompact {
+                PlayerControlsView(musicPlayer: musicPlayer, playlistManager: playlistManager, isCompact: isCompact)
+            }
+        }
+        .frame(minWidth: 600, minHeight: 500)
+        .background(backgroundView)
+        .toast(isShowing: $showingToast, message: toastMessage, type: toastType)
+        .onAppear(perform: setupToastCallback)
+        .sheet(isPresented: $preferencesManager.showPreferences) {
+            PreferencesView(preferencesManager: preferencesManager)
+        }
+        .overlay(addPlaylistPopupOverlay)
+        .overlay(importPopupOverlay)
+        .overlay(playlistNamePopupOverlay)
+        .onKeyPress(.escape) {
+            // Global ESC key handling to close any open popup
+            if showingAddPlaylistPopup {
+                showingAddPlaylistPopup = false
+                return .handled
+            }
+            if showingImportPopup {
+                showingImportPopup = false
+                return .handled
+            }
+            if showingPlaylistNamePopup {
+                showingPlaylistNamePopup = false
+                return .handled
+            }
+            if preferencesManager.showPreferences {
+                preferencesManager.showPreferences = false
+                return .handled
+            }
+            return .ignored
+        }
+    }
+
+    @ViewBuilder
+    private func compactLayout() -> some View {
+        VStack(spacing: 0) {
+            // Main Content (Track List) - takes available space above player controls
+            if let selectedPlaylist = playlistManager.selectedPlaylist {
+                TrackListView(playlist: selectedPlaylist, musicPlayer: musicPlayer)
+                    .environmentObject(playlistManager)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                emptyStateView(isCompact: true)
+            }
+
+            // Player Controls - Always visible and not cut off
+            PlayerControlsView(musicPlayer: musicPlayer, playlistManager: playlistManager, isCompact: true)
+
+            // Playlist Sidebar (at bottom in compact mode)
+            compactSidebar()
+        }
+    }
+
+    @ViewBuilder
+    private func desktopLayout() -> some View {
+        HStack(spacing: 0) {
+            // Sidebar
+            desktopSidebar()
+
+            Divider()
+
+            // Main Content
+            if let selectedPlaylist = playlistManager.selectedPlaylist {
+                TrackListView(playlist: selectedPlaylist, musicPlayer: musicPlayer)
+                    .environmentObject(playlistManager)
+            } else {
+                emptyStateView(isCompact: false)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func emptyStateView(isCompact: Bool) -> some View {
+        VStack(spacing: DesignSystem.Spacing.xl) {
+            Spacer()
+
+            Image(systemName: "music.note.list")
+                .font(.system(size: isCompact ? 56 : 72, weight: .light))
+                .foregroundStyle(themedColors.gradient)
+                .shadow(color: themedColors.primary.opacity(0.3), radius: isCompact ? 6 : 8, x: 0, y: isCompact ? 3 : 4)
+                .scaleEffect(animationTrigger ? 1.05 : 1.0)
+                .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animationTrigger)
+
+            VStack(spacing: isCompact ? DesignSystem.Spacing.sm : DesignSystem.Spacing.md) {
+                Text("Select a Playlist")
+                    .font(isCompact ? DesignSystem.Typography.title2 : DesignSystem.Typography.title)
+                    .fontWeight(.bold)
+                    .foregroundStyle(titleGradient)
+
+                Text("Choose a playlist from the sidebar to view its tracks")
+                    .font(isCompact ? DesignSystem.Typography.callout : DesignSystem.Typography.headline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .opacity(0.8)
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            animationTrigger = true
+        }
+    }
+
+    @ViewBuilder
+    private func compactSidebar() -> some View {
+        PlaylistSidebar(
+            playlistManager: playlistManager,
+            showingAddPlaylistPopup: $showingAddPlaylistPopup,
+            newPlaylistName: $newPlaylistName,
+            showingImportPopup: $showingImportPopup,
+            selectedPlaylistForImport: $selectedPlaylistForImport,
+            showingPlaylistNamePopup: $showingPlaylistNamePopup,
+            playlistNameForFiles: $playlistNameForFiles,
+            pendingFiles: $pendingFiles,
+            isCompact: true
+        )
+        .frame(height: 180)
+    }
+
+    @ViewBuilder
+    private func desktopSidebar() -> some View {
+        PlaylistSidebar(
+            playlistManager: playlistManager,
+            showingAddPlaylistPopup: $showingAddPlaylistPopup,
+            newPlaylistName: $newPlaylistName,
+            showingImportPopup: $showingImportPopup,
+            selectedPlaylistForImport: $selectedPlaylistForImport,
+            showingPlaylistNamePopup: $showingPlaylistNamePopup,
+            playlistNameForFiles: $playlistNameForFiles,
+            pendingFiles: $pendingFiles,
+            isCompact: false
+        )
+    }
+
+    // MARK: - Helper Views
+    @ViewBuilder
+    private var backgroundView: some View {
+        ZStack {
+            themedColors.background
+            colorTheme.backgroundTint
+        }
+    }
+
+    private func setupToastCallback() {
+        playlistManager.onImportSuccess = { message in
+            toastMessage = message
+            toastType = .success
+            showingToast = true
+        }
+    }
+
+    @ViewBuilder
+    private var addPlaylistPopupOverlay: some View {
+        Group {
+            if showingAddPlaylistPopup {
+                AddPlaylistPopup(
+                    isPresented: $showingAddPlaylistPopup,
+                    playlistName: $newPlaylistName,
+                    onSave: {
+                        if !newPlaylistName.isEmpty {
+                            _ = playlistManager.createPlaylist(name: newPlaylistName)
+                            newPlaylistName = ""
+                            showingAddPlaylistPopup = false
+
+                            // Show success toast
+                            toastMessage = "Playlist created successfully"
+                            toastType = .success
+                            showingToast = true
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var importPopupOverlay: some View {
+        Group {
+            if showingImportPopup, let selectedPlaylist = selectedPlaylistForImport {
+                ImportPopup(
+                    isPresented: $showingImportPopup,
+                    playlist: selectedPlaylist,
+                    playlistManager: playlistManager
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var playlistNamePopupOverlay: some View {
+        Group {
+            if showingPlaylistNamePopup {
+                PlaylistNamePopup(
+                    isPresented: $showingPlaylistNamePopup,
+                    playlistName: $playlistNameForFiles,
+                    pendingFiles: pendingFiles,
+                    onSave: playlistNamePopupSaveAction
+                )
+            }
+        }
+    }
+
+    private func playlistNamePopupSaveAction() {
+        guard !playlistNameForFiles.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return
+        }
+
+        let newPlaylist = playlistManager.createPlaylist(name: playlistNameForFiles.trimmingCharacters(in: .whitespacesAndNewlines))
+        playlistManager.selectPlaylist(newPlaylist)
+
+        // Add all pending files to the new playlist
+        for fileUrl in pendingFiles {
+            let track = Track(url: fileUrl)
+            newPlaylist.addTrack(track)
+        }
+
+        // Save the playlists to persist the changes
+        playlistManager.savePlaylists()
+
+        // Show success toast
+        let fileCount = pendingFiles.count
+        toastMessage = fileCount == 1 ? "1 file imported successfully" : "\(fileCount) files imported successfully"
+        toastType = .success
+        showingToast = true
+
+        // Clear state and close popup
+        pendingFiles = []
+        showingPlaylistNamePopup = false
+        playlistNameForFiles = ""
     }
 }
 
