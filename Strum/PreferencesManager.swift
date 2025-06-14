@@ -88,6 +88,8 @@ class PreferencesManager: ObservableObject {
     @Published var colorTheme: ColorTheme = .tangerine {
         didSet {
             savePreferences()
+            // Update app icon when theme changes
+            IconManager.shared.updateIcon(for: colorTheme)
         }
     }
     
@@ -99,6 +101,8 @@ class PreferencesManager: ObservableObject {
     
     init() {
         loadPreferences()
+        // Set the correct icon for the loaded theme
+        IconManager.shared.updateIcon(for: colorTheme)
     }
     
     private func savePreferences() {
