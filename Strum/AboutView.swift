@@ -31,7 +31,7 @@ struct AboutView: View {
             
             // Main content
             VStack(spacing: DesignSystem.Spacing.xl) {
-                // App Icon and Title
+                // App Info Section (Combined App + Author)
                 VStack(spacing: DesignSystem.Spacing.lg) {
                     // App Icon
                     Image(systemName: "music.note")
@@ -46,7 +46,7 @@ struct AboutView: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                    
+
                     // App Name
                     Text("Strum")
                         .font(.system(size: 32, weight: .light, design: .rounded))
@@ -60,31 +60,23 @@ struct AboutView: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                    
-                    // Version
-                    Text("Version 1.0")
-                        .font(DesignSystem.Typography.body)
-                        .foregroundColor(.secondary)
-                }
-                
-                Divider()
-                    .background(colorTheme.primaryColor.opacity(0.3))
-                
-                // Author Section
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    HStack {
-                        Image(systemName: "person.circle.fill")
-                            .foregroundColor(colorTheme.primaryColor)
-                            .font(.system(size: 18))
-                        
-                        Text("Author")
-                            .font(DesignSystem.Typography.headline)
-                            .foregroundColor(.primary)
+
+                    // Version and Author in same section
+                    VStack(spacing: DesignSystem.Spacing.sm) {
+                        Text("Version 1.0")
+                            .font(DesignSystem.Typography.body)
+                            .foregroundColor(.secondary)
+
+                        HStack(spacing: DesignSystem.Spacing.xs) {
+                            Image(systemName: "person.circle.fill")
+                                .foregroundColor(colorTheme.primaryColor)
+                                .font(.system(size: 14))
+
+                            Text("by Quan Ngo")
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(.secondary)
+                        }
                     }
-                    
-                    Text("Quan Ngo")
-                        .font(DesignSystem.Typography.body)
-                        .foregroundColor(.secondary)
                 }
                 
                 // Supported File Types Section

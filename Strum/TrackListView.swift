@@ -628,11 +628,11 @@ struct TrackRow: View {
                 if isPlaying || isPaused {
                     // Subtle active track background with margins
                     ZStack {
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
                             .fill(.ultraThinMaterial)
                             .opacity(0.5)
 
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
                             .fill(colorTheme.primaryColor)
                             .opacity(0.2)
                     }
@@ -640,11 +640,11 @@ struct TrackRow: View {
                 } else if isHovered {
                     // Subtle hover state with margins
                     ZStack {
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
                             .fill(.ultraThinMaterial)
                             .opacity(0.3)
 
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
                             .fill(Color.primary)
                             .opacity(0.08)
                     }

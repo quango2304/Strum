@@ -180,12 +180,13 @@ struct ToastView: View {
     let message: String
     let type: ToastType
     @Binding var isShowing: Bool
-    
+    @Environment(\.colorTheme) private var colorTheme
+
     enum ToastType {
         case success
         case error
         case info
-        
+
         var color: Color {
             switch self {
             case .success: return .green
@@ -193,7 +194,7 @@ struct ToastView: View {
             case .info: return .blue
             }
         }
-        
+
         var icon: String {
             switch self {
             case .success: return "checkmark.circle.fill"
@@ -202,23 +203,24 @@ struct ToastView: View {
             }
         }
     }
-    
+
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.md) {
             Image(systemName: type.icon)
-                .foregroundColor(type.color)
+                .foregroundColor(.white)
                 .font(.system(size: 16, weight: .medium))
-            
+
             Text(message)
                 .font(DesignSystem.Typography.callout)
-                .foregroundColor(.primary)
-            
+                .foregroundColor(.white)
+                .fontWeight(.medium)
+
             Spacer()
         }
         .padding(DesignSystem.Spacing.md)
         .background(
             RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
-                .fill(DesignSystem.Colors.surface)
+                .fill(DesignSystem.colors(for: colorTheme).gradient)
                 .shadow(color: DesignSystem.Shadow.medium, radius: 8, x: 0, y: 4)
         )
         .padding(.horizontal, DesignSystem.Spacing.lg)

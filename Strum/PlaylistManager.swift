@@ -63,6 +63,11 @@ class PlaylistManager: ObservableObject {
 
         savePlaylists()
     }
+
+    func renamePlaylist(_ playlist: Playlist, to newName: String) {
+        playlist.name = newName
+        savePlaylists()
+    }
     
     func selectPlaylist(_ playlist: Playlist) {
         selectedPlaylist = playlist

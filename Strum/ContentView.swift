@@ -14,6 +14,9 @@ struct ContentView: View {
     @Environment(\.colorTheme) private var colorTheme
     @State private var showingAddPlaylistPopup = false
     @State private var newPlaylistName = ""
+    @State private var showingEditPlaylistPopup = false
+    @State private var editPlaylistName = ""
+    @State private var selectedPlaylistForEdit: Playlist?
     @State private var showingImportPopup = false
     @State private var selectedPlaylistForImport: Playlist?
     @State private var showingPlaylistNamePopup = false
@@ -67,29 +70,8 @@ struct ContentView: View {
             PreferencesView(preferencesManager: preferencesManager)
         }
         .overlay(aboutPopupOverlay)
-        .overlay(
-            // Add Playlist Popup - Centered in entire app window
-            Group {
-                if showingAddPlaylistPopup {
-                    AddPlaylistPopup(
-                        isPresented: $showingAddPlaylistPopup,
-                        playlistName: $newPlaylistName,
-                        onSave: {
-                            if !newPlaylistName.isEmpty {
-                                _ = playlistManager.createPlaylist(name: newPlaylistName)
-                                newPlaylistName = ""
-                                showingAddPlaylistPopup = false
-
-                                // Show success toast
-                                toastMessage = "Playlist created successfully"
-                                toastType = .success
-                                showingToast = true
-                            }
-                        }
-                    )
-                }
-            }
-        )
+        .overlay(addPlaylistPopupOverlay)
+        .overlay(editPlaylistPopupOverlay)
         .overlay(
             // Import Popup - Centered in entire app window
             Group {
@@ -152,6 +134,10 @@ struct ContentView: View {
                 showingAddPlaylistPopup = false
                 return .handled
             }
+            if showingEditPlaylistPopup {
+                showingEditPlaylistPopup = false
+                return .handled
+            }
             if showingImportPopup {
                 showingImportPopup = false
                 return .handled
@@ -198,6 +184,10 @@ struct ContentView: View {
             // Global ESC key handling to close any open popup
             if showingAddPlaylistPopup {
                 showingAddPlaylistPopup = false
+                return .handled
+            }
+            if showingEditPlaylistPopup {
+                showingEditPlaylistPopup = false
                 return .handled
             }
             if showingImportPopup {
@@ -293,6 +283,9 @@ struct ContentView: View {
             playlistManager: playlistManager,
             showingAddPlaylistPopup: $showingAddPlaylistPopup,
             newPlaylistName: $newPlaylistName,
+            showingEditPlaylistPopup: $showingEditPlaylistPopup,
+            editPlaylistName: $editPlaylistName,
+            selectedPlaylistForEdit: $selectedPlaylistForEdit,
             showingImportPopup: $showingImportPopup,
             selectedPlaylistForImport: $selectedPlaylistForImport,
             showingPlaylistNamePopup: $showingPlaylistNamePopup,
@@ -310,6 +303,9 @@ struct ContentView: View {
             playlistManager: playlistManager,
             showingAddPlaylistPopup: $showingAddPlaylistPopup,
             newPlaylistName: $newPlaylistName,
+            showingEditPlaylistPopup: $showingEditPlaylistPopup,
+            editPlaylistName: $editPlaylistName,
+            selectedPlaylistForEdit: $selectedPlaylistForEdit,
             showingImportPopup: $showingImportPopup,
             selectedPlaylistForImport: $selectedPlaylistForImport,
             showingPlaylistNamePopup: $showingPlaylistNamePopup,
@@ -352,6 +348,32 @@ struct ContentView: View {
 
                             // Show success toast
                             toastMessage = "Playlist created successfully"
+                            toastType = .success
+                            showingToast = true
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var editPlaylistPopupOverlay: some View {
+        Group {
+            if showingEditPlaylistPopup, let selectedPlaylist = selectedPlaylistForEdit {
+                EditPlaylistPopup(
+                    isPresented: $showingEditPlaylistPopup,
+                    playlistName: $editPlaylistName,
+                    playlist: selectedPlaylist,
+                    onSave: {
+                        if !editPlaylistName.isEmpty {
+                            playlistManager.renamePlaylist(selectedPlaylist, to: editPlaylistName)
+                            editPlaylistName = ""
+                            selectedPlaylistForEdit = nil
+                            showingEditPlaylistPopup = false
+
+                            // Show success toast
+                            toastMessage = "Playlist renamed successfully"
                             toastType = .success
                             showingToast = true
                         }
@@ -510,6 +532,118 @@ struct AddPlaylistPopup: View {
     }
 }
 
+// MARK: - Edit Playlist Popup
+struct EditPlaylistPopup: View {
+    @Binding var isPresented: Bool
+    @Binding var playlistName: String
+    let playlist: Playlist
+    let onSave: () -> Void
+    @FocusState private var isTextFieldFocused: Bool
+    @Environment(\.colorTheme) private var colorTheme
+
+    var body: some View {
+        ZStack {
+            // Beautiful blur background with material
+            ZStack {
+                // Base dark overlay
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+
+                // Material blur effect
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.8)
+                    .ignoresSafeArea()
+            }
+            .onTapGesture {
+                isPresented = false
+            }
+
+            // Popup content
+            VStack(spacing: DesignSystem.Spacing.xl) {
+                // Header with theme styling
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    ZStack {
+                        // Background circle with theme color
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: colorTheme.gradientColors,
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: 48, height: 48)
+                            .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 6, x: 0, y: 3)
+
+                        // White pencil icon on top
+                        Image(systemName: "pencil")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.white)
+                    }
+
+                    Text("Edit Playlist")
+                        .font(DesignSystem.Typography.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+
+                    Text("Enter a new name for your playlist")
+                        .font(DesignSystem.Typography.callout)
+                        .foregroundColor(.secondary)
+                        .opacity(0.8)
+                }
+
+                // Text field with theme styling
+                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                    TextField("Playlist name", text: $playlistName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .font(DesignSystem.Typography.body)
+                        .frame(width: 280)
+                        .focused($isTextFieldFocused)
+                        .onSubmit {
+                            onSave()
+                        }
+                }
+
+                // Themed buttons
+                HStack(spacing: DesignSystem.Spacing.md) {
+                    Button("Cancel") {
+                        isPresented = false
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .keyboardShortcut(.escape)
+
+                    Button("Save") {
+                        onSave()
+                    }
+                    .buttonStyle(ThemedPrimaryButtonStyle(theme: colorTheme))
+                    .keyboardShortcut(.return)
+                    .disabled(playlistName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .padding(DesignSystem.Spacing.xxxl)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl)
+                    .fill(.regularMaterial)
+                    .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+            )
+            .frame(width: 320)
+        }
+        .onAppear {
+            isTextFieldFocused = true
+        }
+        .onKeyPress(.escape) {
+            isPresented = false
+            return .handled
+        }
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.8).combined(with: .opacity),
+            removal: .scale(scale: 1.1).combined(with: .opacity)
+        ))
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isPresented)
+    }
+}
+
 // MARK: - Import Popup
 struct ImportPopup: View {
     @Binding var isPresented: Bool
@@ -648,10 +782,10 @@ struct ImportPopup: View {
                     .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
             )
             .frame(width: 380)
-            .onKeyPress(.escape) {
-                isPresented = false
-                return .handled
-            }
+        }
+        .onKeyPress(.escape) {
+            isPresented = false
+            return .handled
         }
     }
 }

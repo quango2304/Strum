@@ -509,6 +509,7 @@ struct RotatingCDArt: View {
     let size: CGFloat
 
     @State private var rotationAngle: Double = 0
+    @State private var rotationTimer: Timer?
 
     // Create a unique identifier for the artwork to prevent animation between different images
     private var artworkID: String {
@@ -595,27 +596,40 @@ struct RotatingCDArt: View {
         }
         .onChange(of: artworkID) { _, _ in
             // Reset rotation when artwork changes to prevent animation between different images
+            stopRotation()
             rotationAngle = 0
             if isPlaying {
                 startRotation()
             }
         }
+        .onDisappear {
+            stopRotation()
+        }
     }
 
     private func startRotation() {
-        // Start smooth, slow, infinite rotation (8 seconds per full rotation)
-        withAnimation(.linear(duration: 8.0).repeatForever(autoreverses: false)) {
-            rotationAngle = 360
+        // Stop any existing timer first
+        stopRotation()
+
+        // Create a timer that updates rotation angle smoothly
+        // 8 seconds per full rotation = 360 degrees / 8 seconds = 45 degrees per second
+        // Update every 16ms (60 FPS) = 45 * (16/1000) = 0.72 degrees per frame
+        let degreesPerFrame = 45.0 * (16.0 / 1000.0) // 0.72 degrees per 16ms
+
+        rotationTimer = Timer.scheduledTimer(withTimeInterval: 0.016, repeats: true) { _ in
+            withAnimation(.linear(duration: 0.016)) {
+                rotationAngle += degreesPerFrame
+                // Keep angle in reasonable range to prevent overflow
+                if rotationAngle >= 360 {
+                    rotationAngle -= 360
+                }
+            }
         }
     }
 
     private func stopRotation() {
-        // Stop the animation smoothly without changing current position
-        withAnimation(.easeOut(duration: 0.5)) {
-            // Keep the current rotation angle, just stop the infinite animation
-            let currentAngle = rotationAngle.truncatingRemainder(dividingBy: 360)
-            rotationAngle = currentAngle
-        }
+        rotationTimer?.invalidate()
+        rotationTimer = nil
     }
 }
 

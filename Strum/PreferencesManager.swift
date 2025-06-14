@@ -239,7 +239,7 @@ struct ThemedIconButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: size * 0.5))
-            .foregroundColor(isActive ? .white : .primary)
+            .foregroundColor(isActive ? Color.white : Color.primary)
             .frame(width: size, height: size)
             .background(
                 Circle()

@@ -12,6 +12,9 @@ struct PlaylistSidebar: View {
     @ObservedObject var playlistManager: PlaylistManager
     @Binding var showingAddPlaylistPopup: Bool
     @Binding var newPlaylistName: String
+    @Binding var showingEditPlaylistPopup: Bool
+    @Binding var editPlaylistName: String
+    @Binding var selectedPlaylistForEdit: Playlist?
     @Binding var showingImportPopup: Bool
     @Binding var selectedPlaylistForImport: Playlist?
     @Binding var showingPlaylistNamePopup: Bool
@@ -141,6 +144,9 @@ struct PlaylistSidebar: View {
                         playlist: playlist,
                         isSelected: playlistManager.selectedPlaylist?.id == playlist.id,
                         playlistManager: playlistManager,
+                        showingEditPlaylistPopup: $showingEditPlaylistPopup,
+                        editPlaylistName: $editPlaylistName,
+                        selectedPlaylistForEdit: $selectedPlaylistForEdit,
                         showingImportPopup: $showingImportPopup,
                         selectedPlaylistForImport: $selectedPlaylistForImport,
                         isSearchFieldFocused: $isSearchFieldFocused
@@ -310,6 +316,9 @@ struct PlaylistRow: View {
     @ObservedObject var playlist: Playlist
     let isSelected: Bool
     let playlistManager: PlaylistManager
+    @Binding var showingEditPlaylistPopup: Bool
+    @Binding var editPlaylistName: String
+    @Binding var selectedPlaylistForEdit: Playlist?
     @Binding var showingImportPopup: Bool
     @Binding var selectedPlaylistForImport: Playlist?
     @FocusState.Binding var isSearchFieldFocused: Bool
@@ -336,7 +345,7 @@ struct PlaylistRow: View {
             Spacer()
 
             if isHovered {
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
                     // Add content button
                     Button(action: {
                         isSearchFieldFocused = false
@@ -344,11 +353,22 @@ struct PlaylistRow: View {
                         showingImportPopup = true
                     }) {
                         Image(systemName: "plus.circle.fill")
-                            .foregroundColor(.accentColor)
-                            .font(.system(size: 12))
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(ThemedIconButtonStyle(size: 20, isActive: true, theme: colorTheme))
                     .help("Add Music")
+
+                    // Edit button
+                    Button(action: {
+                        isSearchFieldFocused = false
+                        selectedPlaylistForEdit = playlist
+                        editPlaylistName = playlist.name
+                        showingEditPlaylistPopup = true
+                    }) {
+                        Image(systemName: "pencil")
+                            .foregroundColor(.white)
+                    }
+                    .buttonStyle(ThemedIconButtonStyle(size: 20, isActive: true, theme: colorTheme))
+                    .help("Edit Playlist")
 
                     // Delete button
                     Button(action: {
@@ -356,10 +376,9 @@ struct PlaylistRow: View {
                         playlistManager.deletePlaylist(playlist)
                     }) {
                         Image(systemName: "trash")
-                            .foregroundColor(.red)
-                            .font(.system(size: 12))
+                            .foregroundColor(.white)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(ThemedIconButtonStyle(size: 20, isActive: true, theme: colorTheme))
                     .help("Delete Playlist")
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -380,28 +399,28 @@ struct PlaylistRow: View {
                 if isSelected {
                     // Subtle selection background
                     ZStack {
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
                             .fill(.ultraThinMaterial)
                             .opacity(0.6)
 
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
                             .fill(colorTheme.primaryColor)
                             .opacity(0.25)
                     }
                 } else if isHovered {
                     // Subtle hover state
                     ZStack {
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
                             .fill(.ultraThinMaterial)
                             .opacity(0.4)
 
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
                             .fill(Color.primary)
                             .opacity(0.1)
                     }
                 } else {
                     // Transparent
-                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
                         .fill(Color.clear)
                 }
             }
@@ -423,6 +442,9 @@ struct PlaylistRow: View {
                 playlistManager: PlaylistManager(),
                 showingAddPlaylistPopup: .constant(false),
                 newPlaylistName: .constant(""),
+                showingEditPlaylistPopup: .constant(false),
+                editPlaylistName: .constant(""),
+                selectedPlaylistForEdit: .constant(nil),
                 showingImportPopup: .constant(false),
                 selectedPlaylistForImport: .constant(nil),
                 showingPlaylistNamePopup: .constant(false),

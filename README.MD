@@ -131,7 +131,7 @@ A beautiful, modern music player for macOS built with SwiftUI.
 - **Smooth Animations**: Subtle hover effects and drag feedback
 
 ## TODO:
-- Fix thumbnail extraction for better album art display
-- thumbnail animation
-- about
 - smooth transition
+- good import performance
+- theme icon
+- control menu bar
