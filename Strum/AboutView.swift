@@ -16,7 +16,7 @@ struct AboutView: View {
             // Native macOS-style transparent blur background
             Rectangle()
                 .fill(.thinMaterial)
-                .opacity(0.5)
+                .opacity(0.3)
                 .ignoresSafeArea()
                 .onTapGesture {
                     isPresented = false
@@ -145,7 +145,7 @@ struct AboutView: View {
             .padding(DesignSystem.Spacing.xxxl)
             .background(
                 RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl)
-                    .fill(.regularMaterial)
+                    .fill(.ultraThinMaterial)
                     .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
             )
             .frame(width: 480)
