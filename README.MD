@@ -8,7 +8,18 @@
 
 ## 🎬 Demo
 
-https://github.com/quango2304/Strum/blob/main/example_images/demo_video.mp4
+> **Note**: To embed a video that plays directly in the README, you'll need to:
+> 1. Go to a GitHub issue or PR in your repository
+> 2. Drag and drop the `demo_video.mp4` file into the comment box
+> 3. GitHub will generate a proper embed URL like `https://github.com/user-attachments/assets/[unique-id]`
+> 4. Copy that URL and replace the link below
+
+**[📺 Watch Demo Video](https://github.com/quango2304/Strum/raw/refs/heads/main/example_images/demo_video.mp4)**
+
+<video width="100%" controls>
+  <source src="https://github.com/quango2304/Strum/raw/refs/heads/main/example_images/demo_video.mp4" type="video/mp4">
+  Your browser does not support the video tag. <a href="https://github.com/quango2304/Strum/raw/refs/heads/main/example_images/demo_video.mp4">Click here to download the demo video</a>.
+</video>
 
 ---
 
