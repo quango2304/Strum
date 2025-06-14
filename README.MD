@@ -1,134 +1,230 @@
-# Strum Music Player
+# 🎵 Strum
 
-A beautiful, modern music player for macOS built with SwiftUI.
+**A beautiful, modern music player for macOS**
 
-## ✨ Recent UI/UX Improvements
+*Version 1.0* • *by Quan Ngo*
 
-### 🎨 Comprehensive Color Theme System
-- **10 Beautiful Themes**: Choose from Ocean Blue, Royal Purple, Forest Green, Sunset Orange, Cherry Red, Rose Pink, Tropical Teal, Deep Indigo, Tangerine, and System
-- **App-Wide Theming**: Every UI element adapts to your chosen theme - backgrounds, surfaces, buttons, controls, and accents
-- **Subtle & Beautiful**: Reasonable opacity levels and tasteful color blending that enhances without overwhelming
-- **Live Preview**: See theme changes instantly throughout the entire app
-- **Persistent Settings**: Your theme choice is saved and restored on app restart
-- **Preferences Window**: Beautiful, dedicated preferences interface accessible via menu or ⌘,
-- **Theme-Aware Components**: All buttons, surfaces, overlays, and interactive elements use themed colors
-- **Gradient Accents**: Each theme features beautiful gradient color combinations
-- **Smart Color Blending**: Backgrounds and surfaces receive subtle theme tints for cohesive appearance
+---
 
-### 🎨 Design System
-- **Custom Design System**: Implemented a comprehensive design system with consistent colors, typography, spacing, and component styles
-- **Enhanced Accent Color**: Beautiful gradient accent color that adapts to light/dark mode
-- **Modern Typography**: Improved font hierarchy and sizing throughout the app
-- **Consistent Spacing**: Standardized spacing and padding using design tokens
+Strum is an elegant music player designed specifically for macOS, offering a seamless audio experience with beautiful theming, intuitive playlist management, and comprehensive format support. Built with SwiftUI and optimized for performance, Strum brings your music collection to life with style.
 
-### 🎵 Player Controls
-- **Redesigned Controls**: Modern circular buttons with hover states and animations
-- **Enhanced Visual Hierarchy**: Better organization of play/pause, previous/next, shuffle, and repeat controls
-- **Improved Album Art**: Added shadows and rounded corners for a more polished look
-- **macOS Control Center Style Progress Bar**: Pill-shaped progress bar with perfect proportions (20px height)
-- **macOS Control Center Style Volume Control**: Authentic Control Center design with gradient colors
-- **Interactive Sliders**: Smooth drag interactions with proper bounds and visual feedback
-- **Perfect Design Balance**: Track and thumb heights match for authentic macOS appearance
-- **Responsive Design**: Controls adapt beautifully to both compact and desktop layouts
+## ✨ Features
 
-### 📋 Playlist Management
-- **Beautiful Sidebar**: Improved playlist sidebar with better visual separation
-- **Enhanced Add Button**: Modern circular add button with active states
-- **Better Hover States**: Smooth animations and visual feedback on hover
+### 🎨 **Beautiful Design**
+- **6 Stunning Color Themes**: Ocean Blue, Tropical Teal, Royal Purple, Rose Pink, Tangerine, and Classic Red
+- **Dynamic App Icons**: App icon changes automatically to match your selected theme
+- **Responsive Layout**: Seamlessly adapts between desktop and compact modes
+- **Modern UI**: Clean, intuitive interface with smooth animations and blur effects
 
-### 🎼 Track List
-- **Improved Track Rows**: Better spacing, typography, and hover effects
-- **Enhanced Album Artwork**: Small thumbnails with shadows and rounded corners
-- **Better Playing Indicators**: Clear visual indicators for currently playing tracks
-- **Smooth Animations**: Subtle hover animations for better user experience
+### 🎵 **Comprehensive Audio Support**
+- **Multiple Formats**: MP3, FLAC, M4A, WAV, AAC, OGG, WMA
+- **High-Quality Playback**: Optimized audio engine with volume control and seeking
+- **Metadata Extraction**: Automatic extraction of title, artist, album, and artwork
+- **FLAC Optimization**: Enhanced metadata and artwork extraction for FLAC files
 
-### 🔔 Toast Notifications
-- **Success Notifications**: Beautiful toast notifications for successful imports
-- **Multiple Types**: Support for success, error, and info notifications
-- **Auto-dismiss**: Notifications automatically disappear after 3 seconds
-- **Smooth Animations**: Elegant slide-in/out animations
+### 📚 **Smart Playlist Management**
+- **Multiple Playlists**: Create and organize unlimited playlists
+- **Drag & Drop Import**: Easy file and folder importing
+- **Bulk Operations**: Import entire music folders with progress tracking
+- **Search & Filter**: Quickly find tracks across all playlists
+- **Persistent Storage**: Automatic saving with security-scoped bookmarks
 
-### 💫 Popup Dialogs
-- **Beautiful Popups**: Redesigned add playlist and import dialogs with modern styling
-- **Blur Backgrounds**: Elegant overlay backgrounds with proper blur effects
-- **Better Forms**: Improved text fields and button styling
-- **Smooth Transitions**: Spring animations for popup appearance/dismissal
+### 🎛️ **Advanced Playback Controls**
+- **Shuffle & Repeat**: Multiple playback modes for varied listening
+- **Media Key Support**: Integration with macOS media controls
+- **Now Playing**: Rich metadata display in macOS Control Center
+- **Keyboard Shortcuts**: Full keyboard navigation support
 
-### 📱 Responsive Design
-- **Adaptive Layout**: Maintains responsive design while improving visual polish
-- **Touch-Friendly**: Larger touch areas for better usability
-- **Consistent Experience**: Beautiful UI across all screen sizes
+### ⚡ **Performance Optimized**
+- **Smooth UI**: All operations designed for fluid user experience
+- **Background Processing**: Large imports with progress indicators
+- **Memory Efficient**: Optimized for handling large music libraries
+- **Sandboxed Security**: Full macOS App Sandbox compliance
 
-## 🚀 Features
+## 🚀 Quick Start
 
-- **Comprehensive Theme System**: Choose from 10 beautiful color themes that affect every UI element
-- **App-Wide Color Coordination**: Backgrounds, surfaces, buttons, and controls all adapt to your theme
-- **Preferences System**: Dedicated preferences window with live preview and theme selection
-- **Playlist Management**: Create, delete, and organize your music playlists
-- **Drag & Drop**: Import music by dragging files or folders
-- **Responsive Design**: Adapts to different screen sizes while maintaining theme consistency
-- **Modern UI**: Beautiful, polished interface with smooth animations and themed elements
-- **Toast Notifications**: Visual feedback for user actions with themed styling
-- **Keyboard Shortcuts**: Quick access to common functions (⌘, for preferences)
+1. **Download** Strum from the releases page
+2. **Install** by dragging to your Applications folder
+3. **Import** your music using File → Import Files/Folder or drag & drop
+4. **Customize** your experience in Preferences (⌘,)
+5. **Enjoy** your music with beautiful themes and smooth playback!
 
-## 🎨 How to Customize Themes
+## 🎹 Keyboard Shortcuts
 
-1. **Via Menu**: Go to `Strum` → `Preferences...` in the menu bar
-2. **Via Keyboard**: Press `⌘,` (Command + Comma)
-3. **Choose Theme**: Click on any color theme in the preferences window
-4. **Live Preview**: See changes instantly in the preview section
-5. **Auto-Save**: Your theme choice is automatically saved
+| Action | Shortcut |
+|--------|----------|
+| Play/Pause | `Space` |
+| Previous Track | `⌘ + ←` |
+| Next Track | `⌘ + →` |
+| Close Popups | `Esc` |
 
-## 🎯 Available Themes
+## 🎨 Themes
 
-- **Ocean Blue**: Classic blue with cyan accents
-- **Royal Purple**: Rich purple with pink gradients
-- **Forest Green**: Natural green with mint highlights
-- **Sunset Orange**: Warm orange with yellow tones
-- **Cherry Red**: Bold red with pink accents
-- **Rose Pink**: Soft pink with purple gradients
-- **Tropical Teal**: Vibrant teal with cyan highlights
-- **Deep Indigo**: Rich indigo with purple tones
-- **Fresh Mint**: Cool mint with green accents
-- **Sky Cyan**: Bright cyan with blue gradients
+Strum features six carefully crafted color themes:
 
-## 🎨 What Gets Themed
+- **🌊 Ocean Blue** - Calming blue tones
+- **🏝️ Tropical Teal** - Refreshing teal gradients
+- **👑 Royal Purple** - Elegant purple hues
+- **🌸 Rose Pink** - Soft pink aesthetics
+- **🍊 Tangerine** - Vibrant orange warmth
+- **❤️ Classic Red** - Bold red accents
 
-- **Backgrounds**: Main app background with subtle theme tints
-- **Surfaces**: Sidebar, player controls, and track list headers
-- **Buttons**: All player controls, add buttons, and interactive elements
-- **Custom Sliders**: Beautiful gradient progress bars and volume controls
-- **Progress Indicators**: Track progress with gradient fill and white thumb
-- **Volume Controls**: Gradient volume slider with smart speaker icons
-- **Hover States**: Interactive feedback with themed colors
-- **Popup Dialogs**: Add playlist and import dialogs
-- **Icons & Accents**: Currently playing indicators and gradients
-- **Borders & Shadows**: Subtle themed borders and shadow effects
+Each theme includes dynamic app icon matching for a cohesive experience.
 
-## 🎛️ macOS Control Center Style Controls
+## 📱 System Requirements
 
-### Volume Control
-- **macOS Style Design**: Pill-shaped track with same height as the circular thumb (20px)
-- **Smart Speaker Icons**: Dynamic icons that change based on volume level (mute, low, medium, high)
-- **Gradient Track**: Beautiful gradient fill that follows your theme colors
-- **Click to Mute**: Click the speaker icon to quickly mute/unmute
-- **Smooth Interactions**: Responsive drag and click interactions with proper thumb positioning
+- **macOS 12.0** or later
+- **Apple Silicon** or Intel processor
+- **50 MB** available storage
 
-### Progress Bar
-- **Control Center Style**: Full-height pill-shaped track matching macOS Control Center design
-- **Gradient Progress**: Track progress with beautiful theme-colored gradients
-- **Perfect Proportions**: 20px height track with 20px circular white thumb
-- **Click to Seek**: Click anywhere on the track to jump to that position
-- **Drag to Scrub**: Smooth dragging for precise seeking with proper bounds
-- **Time Display**: Monospaced time labels for current and total duration
+## 🔒 Privacy & Security
 
-### Design Details
-- **Consistent Heights**: Both track and thumb are 20px for perfect visual balance
-- **Pill Shape**: Fully rounded corners (10px radius) for authentic macOS look
-- **White Thumb**: Clean white circular indicator with subtle shadow
-- **Proper Positioning**: Thumb stays within track bounds with accurate progress calculation
-- **Theme Integration**: All gradient colors automatically adapt to your selected theme
-- **Smooth Animations**: Subtle hover effects and drag feedback
+Strum is built with privacy in mind:
+- **No Data Collection**: Your music stays on your device
+- **Sandboxed**: Full macOS App Sandbox compliance
+- **Secure Access**: Security-scoped bookmarks for file access
+- **Local Processing**: All metadata extraction happens locally
 
-## TODO:
-- smooth transition
+---
+
+<details>
+<summary><h2>📚 Technical Documentation</h2></summary>
+
+## 🏗️ Architecture Overview
+
+Strum is built using modern SwiftUI architecture with a clear separation of concerns:
+
+### Core Components
+
+#### **Models**
+- **Track**: Represents individual audio files with comprehensive metadata
+- **Playlist**: Manages collections of tracks with CRUD operations
+- **PlayerState**: Enumerations for player states and playback modes
+
+#### **Managers**
+- **PlaylistManager**: Handles playlist operations, file imports, and persistence
+- **MusicPlayerManager**: Controls audio playback, shuffle/repeat modes, and media integration
+- **PreferencesManager**: Manages app settings, themes, and user preferences
+
+#### **UI System**
+- **DesignSystem**: Centralized styling with colors, typography, and spacing
+- **ColorTheme**: Dynamic theming system with 6 predefined themes
+- **Responsive Layout**: Adaptive UI that scales from compact to desktop modes
+
+## 🛠️ Technical Features
+
+### **Audio Processing**
+- **AVAudioPlayer**: Core audio playback engine
+- **FLACMetadataKit**: Custom FLAC metadata extraction
+- **Security-Scoped Bookmarks**: Persistent file access in sandboxed environment
+- **Background Processing**: Non-blocking file imports with progress tracking
+
+### **Data Persistence**
+- **UserDefaults**: Lightweight preference storage
+- **JSON Encoding**: Playlist data serialization
+- **Automatic Saving**: Real-time data persistence with app lifecycle management
+
+### **Performance Optimizations**
+- **Lazy Loading**: Efficient memory usage for large libraries
+- **Background Queues**: Non-blocking UI operations
+- **Caching**: Artwork and metadata caching for improved performance
+- **Responsive Design**: Adaptive layouts for optimal user experience
+
+## 📁 Project Structure
+
+```
+Strum/
+├── App/                          # Application entry point
+│   └── StrumApp.swift           # Main app configuration
+├── Core/                        # Business logic and data
+│   ├── Models/                  # Data models
+│   │   ├── Track.swift         # Audio track with metadata
+│   │   ├── Playlist.swift      # Playlist management
+│   │   └── PlayerState.swift   # Player state enums
+│   └── Managers/               # Business logic managers
+│       ├── PlaylistManager.swift      # Playlist operations
+│       ├── MusicPlayerManager.swift   # Audio playback
+│       └── PreferencesManager.swift   # Settings management
+├── UI/                          # User interface components
+│   ├── Views/                   # Main view components
+│   │   ├── ContentView.swift   # Root view controller
+│   │   ├── TrackListView.swift # Track listing and management
+│   │   └── PlayerControlsView.swift # Playback controls
+│   ├── Components/             # Reusable UI components
+│   │   ├── PlaylistSidebar.swift     # Playlist navigation
+│   │   ├── TrackRowView.swift        # Individual track display
+│   │   └── SearchBar.swift           # Search functionality
+│   ├── Popups/                 # Modal dialogs and overlays
+│   │   ├── PreferencesView.swift     # Settings interface
+│   │   ├── AboutView.swift           # About dialog
+│   │   └── ToastView.swift           # Notification system
+│   └── DesignSystem/           # Styling and theming
+│       ├── DesignSystem.swift        # Core design tokens
+│       ├── ColorTheme.swift          # Theme definitions
+│       └── ButtonStyles.swift        # Custom button styles
+└── Resources/                   # Static assets and configuration
+    ├── Assets.xcassets         # Images and icons
+    └── Supporting Files/       # Configuration files
+```
+
+## 🔧 Development Setup
+
+### **Prerequisites**
+- Xcode 15.0 or later
+- macOS 13.0 or later (for development)
+- Swift 5.9+
+
+### **Dependencies**
+- **FLACMetadataKit**: Custom Swift package for FLAC metadata extraction
+- **AVFoundation**: System framework for audio playback
+- **SwiftUI**: Modern declarative UI framework
+
+### **Build Configuration**
+- **Target**: macOS 12.0+
+- **Architecture**: Universal (Apple Silicon + Intel)
+- **Sandboxing**: Enabled with file access entitlements
+- **Hardened Runtime**: Enabled for security
+
+## 🧪 Testing Strategy
+
+### **Unit Testing**
+- Model validation and data integrity
+- Manager functionality and state management
+- Audio processing and metadata extraction
+
+### **Integration Testing**
+- File import workflows
+- Playlist operations
+- Theme switching and persistence
+
+## 🚀 Deployment
+
+### **Distribution**
+- **Direct Download**: DMG package for easy installation
+- **Code Signing**: Developer ID signed for Gatekeeper compatibility
+- **Notarization**: Apple notarized for enhanced security
+
+### **Release Process**
+1. Version bump in project settings
+2. Archive build with release configuration
+3. Export with Developer ID signing
+4. Create DMG package using `create_dmg.sh`
+5. Notarize with Apple
+6. Distribute via GitHub releases
+
+## 🔮 Future Enhancements
+
+### **Planned Features**
+- **Smart Playlists**: Auto-generated playlists based on metadata
+- **Equalizer**: Built-in audio equalizer with presets
+- **Last.fm Integration**: Scrobbling and music discovery
+- **Cloud Sync**: iCloud playlist synchronization
+- **Lyrics Support**: Embedded and online lyrics display
+
+### **Technical Improvements**
+- **Core Data Migration**: Enhanced data persistence
+- **Metal Visualizations**: GPU-accelerated audio visualizations
+- **Plugin Architecture**: Third-party extension support
+- **Advanced Search**: Full-text search with filters
+
+</details>
