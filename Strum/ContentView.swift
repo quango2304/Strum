@@ -66,10 +66,9 @@ struct ContentView: View {
                 showingToast = true
             }
         }
-        .sheet(isPresented: $preferencesManager.showPreferences) {
-            PreferencesView(preferencesManager: preferencesManager)
-        }
+
         .overlay(aboutPopupOverlay)
+        .overlay(preferencesPopupOverlay)
         .overlay(addPlaylistPopupOverlay)
         .overlay(editPlaylistPopupOverlay)
         .overlay(
@@ -174,9 +173,7 @@ struct ContentView: View {
         .background(backgroundView)
         .toast(isShowing: $showingToast, message: toastMessage, type: toastType)
         .onAppear(perform: setupToastCallback)
-        .sheet(isPresented: $preferencesManager.showPreferences) {
-            PreferencesView(preferencesManager: preferencesManager)
-        }
+
         .overlay(addPlaylistPopupOverlay)
         .overlay(importPopupOverlay)
         .overlay(playlistNamePopupOverlay)
@@ -419,6 +416,15 @@ struct ContentView: View {
         }
     }
 
+    @ViewBuilder
+    private var preferencesPopupOverlay: some View {
+        Group {
+            if preferencesManager.showPreferences {
+                PreferencesView(preferencesManager: preferencesManager)
+            }
+        }
+    }
+
     private func playlistNamePopupSaveAction() {
         guard !playlistNameForFiles.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return
@@ -459,21 +465,14 @@ struct AddPlaylistPopup: View {
 
     var body: some View {
         ZStack {
-            // Beautiful blur background with material
-            ZStack {
-                // Base dark overlay
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-
-                // Material blur effect
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .opacity(0.8)
-                    .ignoresSafeArea()
-            }
-            .onTapGesture {
-                isPresented = false
-            }
+            // Native macOS-style transparent blur background
+            Rectangle()
+                .fill(.thinMaterial)
+                .opacity(0.5)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    isPresented = false
+                }
 
             // Popup content
             VStack(spacing: DesignSystem.Spacing.xl) {
@@ -543,21 +542,14 @@ struct EditPlaylistPopup: View {
 
     var body: some View {
         ZStack {
-            // Beautiful blur background with material
-            ZStack {
-                // Base dark overlay
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-
-                // Material blur effect
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .opacity(0.8)
-                    .ignoresSafeArea()
-            }
-            .onTapGesture {
-                isPresented = false
-            }
+            // Native macOS-style transparent blur background
+            Rectangle()
+                .fill(.thinMaterial)
+                .opacity(0.5)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    isPresented = false
+                }
 
             // Popup content
             VStack(spacing: DesignSystem.Spacing.xl) {
@@ -653,21 +645,14 @@ struct ImportPopup: View {
 
     var body: some View {
         ZStack {
-            // Beautiful blur background with material
-            ZStack {
-                // Base dark overlay
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-
-                // Material blur effect
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .opacity(0.8)
-                    .ignoresSafeArea()
-            }
-            .onTapGesture {
-                isPresented = false
-            }
+            // Native macOS-style transparent blur background
+            Rectangle()
+                .fill(.thinMaterial)
+                .opacity(0.5)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    isPresented = false
+                }
 
             // Popup content
             VStack(spacing: DesignSystem.Spacing.xl) {
@@ -801,21 +786,14 @@ struct PlaylistNamePopup: View {
 
     var body: some View {
         ZStack {
-            // Beautiful blur background with material
-            ZStack {
-                // Base dark overlay
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-
-                // Material blur effect
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .opacity(0.8)
-                    .ignoresSafeArea()
-            }
-            .onTapGesture {
-                isPresented = false
-            }
+            // Native macOS-style transparent blur background
+            Rectangle()
+                .fill(.thinMaterial)
+                .opacity(0.5)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    isPresented = false
+                }
 
             // Popup content
             VStack(spacing: DesignSystem.Spacing.xl) {

@@ -13,21 +13,14 @@ struct AboutView: View {
     
     var body: some View {
         ZStack {
-            // Beautiful blur background with material
-            ZStack {
-                // Base dark overlay
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                
-                // Material blur effect
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .opacity(0.8)
-                    .ignoresSafeArea()
-            }
-            .onTapGesture {
-                isPresented = false
-            }
+            // Native macOS-style transparent blur background
+            Rectangle()
+                .fill(.thinMaterial)
+                .opacity(0.5)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    isPresented = false
+                }
             
             // Main content
             VStack(spacing: DesignSystem.Spacing.xl) {

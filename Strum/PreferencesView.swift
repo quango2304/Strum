@@ -13,21 +13,14 @@ struct PreferencesView: View {
     
     var body: some View {
         ZStack {
-            // Beautiful blur background with material
-            ZStack {
-                // Base dark overlay
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-
-                // Material blur effect
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .opacity(0.8)
-                    .ignoresSafeArea()
-            }
-            .onTapGesture {
-                dismiss()
-            }
+            // Native macOS-style transparent blur background
+            Rectangle()
+                .fill(.thinMaterial)
+                .opacity(0.5)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    dismiss()
+                }
 
             // Main content
             VStack(spacing: DesignSystem.Spacing.xl) {
@@ -212,8 +205,8 @@ struct ThemePreview: View {
         .padding(DesignSystem.Spacing.lg)
         .background(
             RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
-                .fill(.ultraThinMaterial)
-                .opacity(0.8)
+                .fill(.regularMaterial)
+                .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
         )
     }
 }
