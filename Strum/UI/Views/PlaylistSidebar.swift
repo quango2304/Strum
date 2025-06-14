@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import AppKit
 
 struct PlaylistSidebar: View {
     @ObservedObject var playlistManager: PlaylistManager

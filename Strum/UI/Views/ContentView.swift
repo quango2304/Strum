@@ -3,35 +3,107 @@
 //  Strum
 //
 //  Created by leongo on 13/6/25.
+//  Refactored on 14/6/25 for better code organization
 //
 
 import SwiftUI
+import AppKit
 
+// MARK: - Content View
+
+/**
+ * Main content view for the Strum music player application.
+ *
+ * This view serves as the primary interface and handles:
+ * - Responsive layout switching between desktop and compact modes
+ * - Playlist management UI coordination
+ * - Popup and modal management (preferences, about, import dialogs)
+ * - Toast notification display
+ * - Global keyboard shortcuts and ESC key handling
+ * - Integration between playlist management and music playback
+ *
+ * The ContentView adapts its layout based on window size, providing
+ * an optimal experience across different screen sizes and orientations.
+ */
 struct ContentView: View {
+    // MARK: - Environment Objects
+
+    /// Manages playlist data and operations
     @EnvironmentObject private var playlistManager: PlaylistManager
+
+    /// Manages music playback functionality
     @StateObject private var musicPlayer = MusicPlayerManager()
+
+    /// Manages app preferences and settings
     @EnvironmentObject private var preferencesManager: PreferencesManager
+
+    /// Current color theme from environment
     @Environment(\.colorTheme) private var colorTheme
+
+    // MARK: - Popup State Management
+
+    /// Controls visibility of the add playlist popup
     @State private var showingAddPlaylistPopup = false
+
+    /// Text input for new playlist name
     @State private var newPlaylistName = ""
+
+    /// Controls visibility of the edit playlist popup
     @State private var showingEditPlaylistPopup = false
+
+    /// Text input for editing playlist name
     @State private var editPlaylistName = ""
+
+    /// Currently selected playlist for editing
     @State private var selectedPlaylistForEdit: Playlist?
+
+    /// Controls visibility of the import options popup
     @State private var showingImportPopup = false
+
+    /// Currently selected playlist for importing files
     @State private var selectedPlaylistForImport: Playlist?
+
+    /// Controls visibility of the playlist name input popup for file imports
     @State private var showingPlaylistNamePopup = false
+
+    /// Text input for new playlist name when importing files
     @State private var playlistNameForFiles = ""
+
+    /// Array of file URLs pending import into a new playlist
     @State private var pendingFiles: [URL] = []
+
+    // MARK: - Toast Notification State
+
+    /// Controls visibility of toast notifications
     @State private var showingToast = false
+
+    /// Message text for toast notifications
     @State private var toastMessage = ""
+
+    /// Type of toast notification (success, error, etc.)
     @State private var toastType: ToastView.ToastType = .success
+
+    // MARK: - Animation and Focus State
+
+    /// Triggers animations for empty state view
     @State private var animationTrigger = false
+
+    /// Tracks focus state of search fields across the interface
     @FocusState private var isSearchFieldFocused: Bool
 
-    // Responsive breakpoint - switch to vertical layout when width < 1000
+    // MARK: - Layout Constants
+
+    /// Responsive breakpoint - switches to compact layout when width < 1000px
     private let responsiveBreakpoint: CGFloat = 1000
 
     // MARK: - Computed Properties
+
+    /**
+     * Gradient for title text using current theme colors.
+     *
+     * Creates a horizontal gradient from the theme's gradient colors
+     * for use in headings and prominent text elements.
+     */
     private var titleGradient: LinearGradient {
         LinearGradient(
             colors: colorTheme.gradientColors,
@@ -40,6 +112,12 @@ struct ContentView: View {
         )
     }
 
+    /**
+     * Themed color palette for the current color theme.
+     *
+     * Provides access to the complete set of themed colors
+     * including backgrounds, surfaces, and accent colors.
+     */
     private var themedColors: DesignSystem.ThemedColors {
         DesignSystem.colors(for: colorTheme)
     }
@@ -57,7 +135,17 @@ struct ContentView: View {
                 colorTheme.backgroundTint
             }
         )
-        .toast(isShowing: $showingToast, message: toastMessage, type: toastType)
+        .overlay(
+            // Toast notification overlay
+            Group {
+                if showingToast {
+                    ToastView(message: toastMessage, type: toastType, isShowing: $showingToast)
+                        .zIndex(1000)
+                        .padding(.top, DesignSystem.Spacing.lg)
+                }
+            },
+            alignment: .top
+        )
         .onAppear {
             // Set up toast callback for import success
             playlistManager.onImportSuccess = { message in
@@ -181,7 +269,6 @@ struct ContentView: View {
         }
         .frame(minWidth: 500, minHeight: 700)
         .background(backgroundView)
-        .toast(isShowing: $showingToast, message: toastMessage, type: toastType)
         .onAppear(perform: setupToastCallback)
 
         .overlay(addPlaylistPopupOverlay)
@@ -462,418 +549,6 @@ struct ContentView: View {
         pendingFiles = []
         showingPlaylistNamePopup = false
         playlistNameForFiles = ""
-    }
-}
-
-// MARK: - Add Playlist Popup
-struct AddPlaylistPopup: View {
-    @Binding var isPresented: Bool
-    @Binding var playlistName: String
-    let onSave: () -> Void
-    @FocusState private var isTextFieldFocused: Bool
-    @Environment(\.colorTheme) private var colorTheme
-
-    var body: some View {
-        ZStack {
-            // Native macOS-style transparent blur background
-            Rectangle()
-                .fill(.thinMaterial)
-                .opacity(0.3)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
-
-            // Popup content
-            VStack(spacing: DesignSystem.Spacing.xl) {
-                // Icon and Title
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    Image(systemName: "music.note.list")
-                        .font(.system(size: 40))
-                        .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
-
-                    Text("New Playlist")
-                        .font(DesignSystem.Typography.title2)
-                        .foregroundColor(.primary)
-                }
-
-                // Text field
-                TextField("Playlist Name", text: $playlistName)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .font(DesignSystem.Typography.body)
-                    .focused($isTextFieldFocused)
-                    .onSubmit {
-                        onSave()
-                    }
-
-                // Buttons
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    Button("Cancel") {
-                        isPresented = false
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .keyboardShortcut(.escape)
-
-                    Button("Create") {
-                        onSave()
-                    }
-                    .buttonStyle(ThemedPrimaryButtonStyle(theme: colorTheme))
-                    .keyboardShortcut(.return)
-                    .disabled(playlistName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .padding(DesignSystem.Spacing.xxxl)
-            .background(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl)
-                    .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
-            )
-            .frame(width: 320)
-        }
-        .onAppear {
-            isTextFieldFocused = true
-        }
-        .transition(.asymmetric(
-            insertion: .scale(scale: 0.9).combined(with: .opacity),
-            removal: .scale(scale: 1.1).combined(with: .opacity)
-        ))
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isPresented)
-    }
-}
-
-// MARK: - Edit Playlist Popup
-struct EditPlaylistPopup: View {
-    @Binding var isPresented: Bool
-    @Binding var playlistName: String
-    let playlist: Playlist
-    let onSave: () -> Void
-    @FocusState private var isTextFieldFocused: Bool
-    @Environment(\.colorTheme) private var colorTheme
-
-    var body: some View {
-        ZStack {
-            // Native macOS-style transparent blur background
-            Rectangle()
-                .fill(.thinMaterial)
-                .opacity(0.3)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
-
-            // Popup content
-            VStack(spacing: DesignSystem.Spacing.xl) {
-                // Header with theme styling
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    ZStack {
-                        // Background circle with theme color
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: colorTheme.gradientColors,
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(width: 48, height: 48)
-                            .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 6, x: 0, y: 3)
-
-                        // White pencil icon on top
-                        Image(systemName: "pencil")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white)
-                    }
-
-                    Text("Edit Playlist")
-                        .font(DesignSystem.Typography.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-
-                    Text("Enter a new name for your playlist")
-                        .font(DesignSystem.Typography.callout)
-                        .foregroundColor(.secondary)
-                        .opacity(0.8)
-                }
-
-                // Text field with theme styling
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    TextField("Playlist name", text: $playlistName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .font(DesignSystem.Typography.body)
-                        .frame(width: 280)
-                        .focused($isTextFieldFocused)
-                        .onSubmit {
-                            onSave()
-                        }
-                }
-
-                // Themed buttons
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    Button("Cancel") {
-                        isPresented = false
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .keyboardShortcut(.escape)
-
-                    Button("Save") {
-                        onSave()
-                    }
-                    .buttonStyle(ThemedPrimaryButtonStyle(theme: colorTheme))
-                    .keyboardShortcut(.return)
-                    .disabled(playlistName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .padding(DesignSystem.Spacing.xxxl)
-            .background(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl)
-                    .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
-            )
-            .frame(width: 320)
-        }
-        .onAppear {
-            isTextFieldFocused = true
-        }
-        .onKeyPress(.escape) {
-            isPresented = false
-            return .handled
-        }
-        .transition(.asymmetric(
-            insertion: .scale(scale: 0.8).combined(with: .opacity),
-            removal: .scale(scale: 1.1).combined(with: .opacity)
-        ))
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isPresented)
-    }
-}
-
-// MARK: - Import Popup
-struct ImportPopup: View {
-    @Binding var isPresented: Bool
-    let playlist: Playlist
-    let playlistManager: PlaylistManager
-    @Environment(\.colorTheme) private var colorTheme
-
-    var body: some View {
-        ZStack {
-            // Native macOS-style transparent blur background
-            Rectangle()
-                .fill(.thinMaterial)
-                .opacity(0.3)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
-
-            // Popup content
-            VStack(spacing: DesignSystem.Spacing.xl) {
-                // Icon and Title
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    // Music icon with theme gradient
-                    Image(systemName: "music.note.list")
-                        .font(.system(size: 48, weight: .medium))
-                        .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
-                        .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 6, x: 0, y: 3)
-
-                    // Title
-                    Text("Add Music")
-                        .font(DesignSystem.Typography.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-
-                    // Subtitle
-                    Text("to \"\(playlist.name)\"")
-                        .font(DesignSystem.Typography.title2)
-                        .foregroundColor(.secondary)
-                }
-
-                // Action buttons with theme styling
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    // Import Files button
-                    Button(action: {
-                        playlistManager.selectPlaylist(playlist)
-                        playlistManager.importFiles()
-                        isPresented = false
-                    }) {
-                        HStack(spacing: DesignSystem.Spacing.md) {
-                            Image(systemName: "doc.badge.plus")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(DesignSystem.colors(for: colorTheme).primary)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Import Files")
-                                    .font(DesignSystem.Typography.headline)
-                                    .foregroundColor(.primary)
-                                Text("Select individual music files")
-                                    .font(DesignSystem.Typography.caption)
-                                    .foregroundColor(.secondary)
-                            }
-
-                            Spacer()
-
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.horizontal, DesignSystem.Spacing.xl)
-                        .padding(.vertical, DesignSystem.Spacing.lg)
-                        .background(
-                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
-                                .fill(DesignSystem.colors(for: colorTheme).primary.opacity(0.08))
-                                .stroke(DesignSystem.colors(for: colorTheme).primary.opacity(0.2), lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .keyboardShortcut(.return)
-
-                    // Import Folder button
-                    Button(action: {
-                        playlistManager.selectPlaylist(playlist)
-                        playlistManager.importFolder()
-                        isPresented = false
-                    }) {
-                        HStack(spacing: DesignSystem.Spacing.md) {
-                            Image(systemName: "folder.badge.plus")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(DesignSystem.colors(for: colorTheme).primary)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Import Folder")
-                                    .font(DesignSystem.Typography.headline)
-                                    .foregroundColor(.primary)
-                                Text("Select an entire music folder")
-                                    .font(DesignSystem.Typography.caption)
-                                    .foregroundColor(.secondary)
-                            }
-
-                            Spacer()
-
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.horizontal, DesignSystem.Spacing.xl)
-                        .padding(.vertical, DesignSystem.Spacing.lg)
-                        .background(
-                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
-                                .fill(DesignSystem.colors(for: colorTheme).primary.opacity(0.08))
-                                .stroke(DesignSystem.colors(for: colorTheme).primary.opacity(0.2), lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-
-                // Cancel button
-                Button("Cancel") {
-                    isPresented = false
-                }
-                .keyboardShortcut(.escape)
-                .buttonStyle(.plain)
-                .foregroundColor(.secondary)
-            }
-            .padding(DesignSystem.Spacing.xxxl)
-            .background(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl)
-                    .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
-            )
-            .frame(width: 380)
-        }
-        .onKeyPress(.escape) {
-            isPresented = false
-            return .handled
-        }
-    }
-}
-
-// MARK: - Playlist Name Popup for Files
-struct PlaylistNamePopup: View {
-    @Binding var isPresented: Bool
-    @Binding var playlistName: String
-    let pendingFiles: [URL]
-    let onSave: () -> Void
-    @FocusState private var isTextFieldFocused: Bool
-    @Environment(\.colorTheme) private var colorTheme
-
-    var body: some View {
-        ZStack {
-            // Native macOS-style transparent blur background
-            Rectangle()
-                .fill(.thinMaterial)
-                .opacity(0.3)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
-
-            // Popup content
-            VStack(spacing: DesignSystem.Spacing.xl) {
-                // Header with theme styling
-                VStack(spacing: DesignSystem.Spacing.md) {
-                    Image(systemName: "music.note.list")
-                        .font(.system(size: 48, weight: .medium))
-                        .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
-                        .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 6, x: 0, y: 3)
-
-                    Text("Create New Playlist")
-                        .font(DesignSystem.Typography.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-
-                    Text("Enter a name for your new playlist")
-                        .font(DesignSystem.Typography.callout)
-                        .foregroundColor(.secondary)
-                        .opacity(0.8)
-                }
-
-                // Text field with theme styling
-                VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
-                    TextField("Playlist name", text: $playlistName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .font(DesignSystem.Typography.body)
-                        .frame(width: 280)
-                        .focused($isTextFieldFocused)
-                        .onSubmit {
-                            onSave()
-                        }
-
-                    Text("\(pendingFiles.count) file\(pendingFiles.count == 1 ? "" : "s") ready to import")
-                        .font(DesignSystem.Typography.caption)
-                        .foregroundColor(.secondary)
-                        .opacity(0.8)
-                }
-
-                // Themed buttons
-                HStack(spacing: DesignSystem.Spacing.md) {
-                    Button("Cancel") {
-                        isPresented = false
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .keyboardShortcut(.escape)
-
-                    Button("Create") {
-                        onSave()
-                    }
-                    .buttonStyle(ThemedPrimaryButtonStyle(theme: colorTheme))
-                    .keyboardShortcut(.return)
-                    .disabled(playlistName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .padding(DesignSystem.Spacing.xxxl)
-            .background(
-                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl)
-                    .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
-            )
-            .frame(width: 320)
-        }
-        .onAppear {
-            isTextFieldFocused = true
-        }
-        .transition(.asymmetric(
-            insertion: .scale(scale: 0.8).combined(with: .opacity),
-            removal: .scale(scale: 1.1).combined(with: .opacity)
-        ))
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isPresented)
     }
 }
 

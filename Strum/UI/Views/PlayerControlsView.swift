@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct PlayerControlsView: View {
     @ObservedObject var musicPlayer: MusicPlayerManager

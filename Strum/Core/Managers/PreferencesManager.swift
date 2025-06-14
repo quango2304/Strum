@@ -3,26 +3,67 @@
 //  Strum
 //
 //  Created by leongo on 13/6/25.
+//  Refactored on 14/6/25 for better code organization
 //
 
 import SwiftUI
 import Foundation
+import AppKit
 
 // MARK: - Color Theme
+
+/**
+ * Enumeration defining available color themes for the application.
+ *
+ * Each theme provides:
+ * - A unique identifier and display name
+ * - Primary and accent colors
+ * - Gradient color combinations
+ * - Background and surface tints
+ *
+ * Themes are designed to provide visual variety while maintaining
+ * accessibility and readability across the interface.
+ */
 enum ColorTheme: String, CaseIterable, Identifiable {
+    /// Ocean blue theme with cyan accents
     case blue = "blue"
+
+    /// Royal purple theme with pink accents
     case purple = "purple"
+
+    /// Forest green theme with mint accents
     case green = "green"
+
+    /// Sunset orange theme with yellow accents
     case orange = "orange"
+
+    /// Cherry red theme with pink accents
     case red = "red"
+
+    /// Rose pink theme with purple accents
     case pink = "pink"
+
+    /// Tropical teal theme with cyan accents
     case teal = "teal"
+
+    /// Deep indigo theme with purple accents
     case indigo = "indigo"
+
+    /// Tangerine theme (default) with warm orange tones
     case tangerine = "tangerine"
+
+    /// System theme using macOS accent color
     case system = "system"
-    
+
+    /// Unique identifier for the theme
     var id: String { rawValue }
-    
+
+    /**
+     * User-friendly display name for the theme.
+     *
+     * These names are shown in the preferences interface and provide
+     * descriptive, appealing names for each color scheme.
+     */
     var displayName: String {
         switch self {
         case .blue: return "Ocean Blue"
@@ -37,7 +78,14 @@ enum ColorTheme: String, CaseIterable, Identifiable {
         case .system: return "System"
         }
     }
-    
+
+    /**
+     * Primary color for the theme.
+     *
+     * This color is used for main UI elements like buttons, progress bars,
+     * and active states. Each theme provides a distinct primary color that
+     * defines the overall visual character.
+     */
     var primaryColor: Color {
         switch self {
         case .blue: return Color.blue
@@ -48,11 +96,17 @@ enum ColorTheme: String, CaseIterable, Identifiable {
         case .pink: return Color.pink
         case .teal: return Color.teal
         case .indigo: return Color.indigo
-        case .tangerine: return Color(red: 1.0, green: 0.4, blue: 0.35) // Tangerine color
-        case .system: return Color.accentColor // macOS system accent color
+        case .tangerine: return Color(red: 1.0, green: 0.4, blue: 0.35) // Custom tangerine color
+        case .system: return Color.accentColor // Uses macOS system accent color
         }
     }
-    
+
+    /**
+     * Gradient colors for enhanced visual effects.
+     *
+     * Each theme provides a two-color gradient that creates smooth
+     * transitions and visual depth in UI elements like buttons and backgrounds.
+     */
     var gradientColors: [Color] {
         switch self {
         case .blue: return [Color.blue, Color.cyan]
@@ -68,23 +122,59 @@ enum ColorTheme: String, CaseIterable, Identifiable {
         }
     }
 
-    // Subtle background tint - very light
+    /**
+     * Subtle background tint for the main application background.
+     *
+     * Provides a very light theme-colored tint (2% opacity) to give
+     * the background a subtle themed appearance without overwhelming content.
+     */
     var backgroundTint: Color {
         primaryColor.opacity(0.02)
     }
 
-    // Subtle surface tint for cards and panels
+    /**
+     * Subtle surface tint for cards, panels, and elevated surfaces.
+     *
+     * Provides a light theme-colored tint (4% opacity) for UI surfaces
+     * that need to stand out from the background while maintaining subtlety.
+     */
     var surfaceTint: Color {
         primaryColor.opacity(0.04)
     }
-    
+
+    /**
+     * Accent color for the theme (alias for primaryColor).
+     *
+     * Provides semantic naming for accent color usage in the interface.
+     */
     var accentColor: Color {
         return primaryColor
     }
 }
 
 // MARK: - Preferences Manager
+
+/**
+ * Manages application preferences and settings.
+ *
+ * This class handles:
+ * - Color theme selection and persistence
+ * - UI state for preferences and about dialogs
+ * - Automatic app icon updates when themes change
+ * - UserDefaults integration for persistent storage
+ *
+ * The PreferencesManager automatically saves changes and coordinates
+ * with the IconManager to update the app icon when themes change.
+ */
 class PreferencesManager: ObservableObject {
+    // MARK: - Published Properties
+
+    /**
+     * Currently selected color theme.
+     *
+     * When changed, automatically saves the preference and updates
+     * the app icon to match the new theme.
+     */
     @Published var colorTheme: ColorTheme = .tangerine {
         didSet {
             savePreferences()
@@ -92,23 +182,53 @@ class PreferencesManager: ObservableObject {
             IconManager.shared.updateIcon(for: colorTheme)
         }
     }
-    
+
+    /// Controls visibility of the preferences popup
     @Published var showPreferences = false
+
+    /// Controls visibility of the about dialog
     @Published var showAbout = false
-    
+
+    // MARK: - Private Properties
+
+    /// UserDefaults instance for persistent storage
     private let userDefaults = UserDefaults.standard
+
+    /// Key for storing color theme preference
     private let colorThemeKey = "StrumColorTheme"
-    
+
+    // MARK: - Initialization
+
+    /**
+     * Initializes the preferences manager.
+     *
+     * Loads saved preferences from UserDefaults and sets the
+     * appropriate app icon for the current theme.
+     */
     init() {
         loadPreferences()
         // Set the correct icon for the loaded theme
         IconManager.shared.updateIcon(for: colorTheme)
     }
-    
+
+    // MARK: - Persistence Methods
+
+    /**
+     * Saves current preferences to UserDefaults.
+     *
+     * Currently saves the selected color theme. This method is
+     * called automatically when the colorTheme property changes.
+     */
     private func savePreferences() {
         userDefaults.set(colorTheme.rawValue, forKey: colorThemeKey)
     }
-    
+
+    /**
+     * Loads preferences from UserDefaults.
+     *
+     * Attempts to restore the previously selected color theme.
+     * If no saved theme exists, uses the default (.tangerine).
+     */
     private func loadPreferences() {
         if let savedTheme = userDefaults.string(forKey: colorThemeKey),
            let theme = ColorTheme(rawValue: savedTheme) {

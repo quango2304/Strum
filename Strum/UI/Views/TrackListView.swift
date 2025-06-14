@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import AppKit
 
 struct TrackListView: View {
     @ObservedObject var playlist: Playlist

@@ -3,6 +3,7 @@
 //  Strum
 //
 //  Created by leongo on 13/6/25.
+//  Refactored on 14/6/25 for better code organization
 //
 
 import Foundation
@@ -10,35 +11,90 @@ import AppKit
 import UniformTypeIdentifiers
 
 // MARK: - UTType Extensions for FLAC support
+
+/**
+ * Extension to add FLAC file type support to UTType.
+ *
+ * This extension ensures that FLAC files are properly recognized
+ * as audio files in file selection dialogs and drag-and-drop operations.
+ */
 extension UTType {
+    /// FLAC audio file type identifier
     static var flac: UTType {
         UTType(filenameExtension: "flac") ?? UTType.audio
     }
 }
 
+// MARK: - Playlist Manager
+
+/**
+ * Manages playlist creation, modification, and audio file importing.
+ *
+ * This class handles:
+ * - Playlist CRUD operations (create, read, update, delete)
+ * - Audio file importing from files and folders
+ * - Progress tracking for long-running import operations
+ * - Persistent storage of playlist data
+ * - Security-scoped resource management for sandboxed file access
+ *
+ * The PlaylistManager uses debounced saving to improve performance
+ * during rapid changes and provides progress callbacks for UI updates.
+ */
 class PlaylistManager: ObservableObject {
+    // MARK: - Published Properties
+
+    /// Array of all playlists managed by this instance
     @Published var playlists: [Playlist] = []
+
+    /// Currently selected playlist for display and operations
     @Published var selectedPlaylist: Playlist?
 
-    // Progress tracking for imports
+    // MARK: - Import Progress Tracking
+
+    /// Indicates whether an import operation is currently in progress
     @Published var isImporting: Bool = false
+
+    /// Progress value from 0.0 to 1.0 for the current import operation
     @Published var importProgress: Double = 0.0
+
+    /// Name of the file currently being processed during import
     @Published var importCurrentFile: String = ""
+
+    /// Total number of files to be imported in the current operation
     @Published var importTotalFiles: Int = 0
+
+    /// Number of files that have been processed so far
     @Published var importProcessedFiles: Int = 0
 
-    // Callback for showing toast notifications
+    // MARK: - Callbacks
+
+    /// Callback function to display success toast notifications
     var onImportSuccess: ((String) -> Void)?
 
+    // MARK: - Private Properties
+
+    /// Documents directory URL for storing playlist data
     private let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+
+    /// URL for the playlist storage file
     private var playlistsURL: URL {
         documentsURL.appendingPathComponent("Strum_Playlists.json")
     }
 
-    // Debouncing for save operations to improve performance
+    /// Work item for debounced save operations to improve performance
     private var saveWorkItem: DispatchWorkItem?
+
+    /// Background queue for save operations to avoid blocking the main thread
     private let saveQueue = DispatchQueue(label: "playlist.save", qos: .utility)
-    
+
+    // MARK: - Initialization
+
+    /**
+     * Initializes the playlist manager.
+     *
+     * Loads existing playlists from storage, creates a default playlist
+     * if none exist, and selects the first playlist.
+     */
     init() {
         loadPlaylists()
         if playlists.isEmpty {
@@ -46,20 +102,42 @@ class PlaylistManager: ObservableObject {
         }
         selectedPlaylist = playlists.first
     }
-    
+
+    // MARK: - Playlist Management
+
+    /**
+     * Creates a default "My Music" playlist.
+     *
+     * This method is called during initialization if no playlists exist,
+     * ensuring the user always has at least one playlist to work with.
+     */
     private func createDefaultPlaylist() {
         let defaultPlaylist = Playlist(name: "My Music")
         playlists.append(defaultPlaylist)
         savePlaylists()
     }
-    
+
+    /**
+     * Creates a new playlist with the specified name.
+     *
+     * - Parameter name: The name for the new playlist
+     * - Returns: The newly created playlist
+     */
     func createPlaylist(name: String) -> Playlist {
         let newPlaylist = Playlist(name: name)
         playlists.append(newPlaylist)
         savePlaylists()
         return newPlaylist
     }
-    
+
+    /**
+     * Deletes the specified playlist.
+     *
+     * If the deleted playlist was currently selected, automatically
+     * selects the first available playlist.
+     *
+     * - Parameter playlist: The playlist to delete
+     */
     func deletePlaylist(_ playlist: Playlist) {
         playlists.removeAll { $0.id == playlist.id }
 
@@ -71,15 +149,40 @@ class PlaylistManager: ObservableObject {
         savePlaylists()
     }
 
+    /**
+     * Renames an existing playlist.
+     *
+     * - Parameters:
+     *   - playlist: The playlist to rename
+     *   - newName: The new name for the playlist
+     */
     func renamePlaylist(_ playlist: Playlist, to newName: String) {
         playlist.name = newName
         savePlaylists()
     }
-    
+
+    /**
+     * Selects a playlist as the currently active playlist.
+     *
+     * - Parameter playlist: The playlist to select
+     */
     func selectPlaylist(_ playlist: Playlist) {
         selectedPlaylist = playlist
     }
-    
+
+    // MARK: - File Import Operations
+
+    /**
+     * Presents a file selection dialog and imports selected audio files.
+     *
+     * This method:
+     * - Shows an NSOpenPanel configured for audio file selection
+     * - Supports multiple file selection
+     * - Processes files in the background with progress tracking
+     * - Handles security-scoped resource access for sandboxed apps
+     * - Updates the UI with import progress
+     * - Shows success notifications upon completion
+     */
     func importFiles() {
         let openPanel = NSOpenPanel()
         openPanel.allowsMultipleSelection = true
@@ -100,7 +203,7 @@ class PlaylistManager: ObservableObject {
                 self.importCurrentFile = urls.count == 1 ? "Importing 1 file..." : "Importing \(urls.count) files..."
             }
 
-            // Process files in background
+            // Process files in background to avoid blocking the UI
             DispatchQueue.global(qos: .userInitiated).async {
                 var successfulTracks: [Track] = []
                 let totalFiles = urls.count
@@ -108,20 +211,21 @@ class PlaylistManager: ObservableObject {
                 for (index, url) in urls.enumerated() {
                     let currentIndex = index + 1
 
-                    // Update current file on main thread
+                    // Update current file on main thread for UI responsiveness
                     DispatchQueue.main.async {
                         self.importCurrentFile = url.lastPathComponent
                         self.importProcessedFiles = currentIndex
                         self.importProgress = Double(currentIndex) / Double(totalFiles)
                     }
 
-                    // Create security-scoped bookmark
+                    // Create security-scoped bookmark for sandboxed file access
                     guard url.startAccessingSecurityScopedResource() else {
                         print("Failed to access security scoped resource: \(url)")
                         continue
                     }
                     defer { url.stopAccessingSecurityScopedResource() }
 
+                    // Create track with metadata extraction
                     let track = Track(url: url)
                     successfulTracks.append(track)
                 }
@@ -141,7 +245,7 @@ class PlaylistManager: ObservableObject {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                         self.isImporting = false
 
-                        // Show success toast
+                        // Show success toast notification
                         let message = successfulTracks.count == 1 ? "1 file imported successfully" : "\(successfulTracks.count) files imported successfully"
                         self.onImportSuccess?(message)
                     }
@@ -149,7 +253,14 @@ class PlaylistManager: ObservableObject {
             }
         }
     }
-    
+
+    /**
+     * Presents a folder selection dialog and imports all audio files from the selected folder.
+     *
+     * This method recursively scans the selected folder for audio files
+     * and imports them with progress tracking. It handles security-scoped
+     * resource access for sandboxed applications.
+     */
     func importFolder() {
         let openPanel = NSOpenPanel()
         openPanel.allowsMultipleSelection = false
@@ -159,7 +270,7 @@ class PlaylistManager: ObservableObject {
         if openPanel.runModal() == .OK {
             guard let folderURL = openPanel.urls.first else { return }
 
-            // Create security-scoped bookmark
+            // Create security-scoped bookmark for folder access
             guard folderURL.startAccessingSecurityScopedResource() else {
                 print("Failed to access security scoped resource: \(folderURL)")
                 return
@@ -170,6 +281,15 @@ class PlaylistManager: ObservableObject {
         }
     }
 
+    /**
+     * Imports audio files from a folder URL (typically from drag-and-drop operations).
+     *
+     * This method is used when a folder is dragged into the application.
+     * For drag-and-drop operations, the system grants temporary access
+     * to the files, so security-scoped resource access is not required.
+     *
+     * - Parameter folderURL: The URL of the folder to import from
+     */
     func importFolderAtURL(_ folderURL: URL) {
         print("importFolderAtURL called with: \(folderURL)")
         // For drag and drop, we don't need security scoped access
@@ -362,8 +482,18 @@ class PlaylistManager: ObservableObject {
         return count
     }
 
+    // MARK: - Persistence Operations
+
+    /**
+     * Saves playlists to persistent storage with debouncing.
+     *
+     * This method implements debouncing to prevent excessive disk writes
+     * during rapid changes (e.g., when importing many files). The actual
+     * save operation is delayed by 0.1 seconds and any pending saves are
+     * cancelled when a new save is requested.
+     */
     func savePlaylists() {
-        // Cancel any pending save operation
+        // Cancel any pending save operation to implement debouncing
         saveWorkItem?.cancel()
 
         // Create a new debounced save operation
@@ -378,6 +508,12 @@ class PlaylistManager: ObservableObject {
         saveQueue.asyncAfter(deadline: .now() + 0.1, execute: workItem)
     }
 
+    /**
+     * Performs the actual save operation to disk.
+     *
+     * Encodes the playlists array to JSON and writes it to the
+     * designated storage file in the user's Documents directory.
+     */
     private func performSave() {
         do {
             let data = try JSONEncoder().encode(playlists)
@@ -387,15 +523,28 @@ class PlaylistManager: ObservableObject {
         }
     }
 
-    // Force immediate save (useful for app termination)
+    /**
+     * Forces an immediate save operation without debouncing.
+     *
+     * This method is useful for critical save operations such as
+     * app termination where we need to ensure data is persisted
+     * immediately.
+     */
     func savePlaylistsImmediately() {
         saveWorkItem?.cancel()
         performSave()
     }
-    
+
+    /**
+     * Loads playlists from persistent storage.
+     *
+     * Attempts to read and decode playlist data from the storage file.
+     * If the file doesn't exist or cannot be decoded, the operation
+     * fails silently and the playlists array remains empty.
+     */
     private func loadPlaylists() {
         guard FileManager.default.fileExists(atPath: playlistsURL.path) else { return }
-        
+
         do {
             let data = try Data(contentsOf: playlistsURL)
             playlists = try JSONDecoder().decode([Playlist].self, from: data)
@@ -406,7 +555,21 @@ class PlaylistManager: ObservableObject {
 }
 
 // MARK: - Array Extension for Batching
+
+/**
+ * Extension to Array that provides batching functionality.
+ *
+ * This extension is used to split large arrays into smaller chunks
+ * for processing, which helps maintain UI responsiveness during
+ * long-running operations like importing many files.
+ */
 extension Array {
+    /**
+     * Splits the array into chunks of the specified size.
+     *
+     * - Parameter size: The maximum size of each chunk
+     * - Returns: An array of arrays, where each sub-array contains at most `size` elements
+     */
     func chunked(into size: Int) -> [[Element]] {
         return stride(from: 0, to: count, by: size).map {
             Array(self[$0..<Swift.min($0 + size, count)])
