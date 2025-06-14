@@ -262,3 +262,45 @@ struct ThemedIconButtonStyle: ButtonStyle {
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }
+
+// MARK: - Action-Specific Icon Button Style
+enum IconActionType {
+    case add
+    case edit
+    case delete
+
+    var backgroundColor: Color {
+        switch self {
+        case .add:
+            return .green
+        case .edit:
+            return .yellow
+        case .delete:
+            return .red
+        }
+    }
+}
+
+struct ActionIconButtonStyle: ButtonStyle {
+    let size: CGFloat
+    let actionType: IconActionType
+
+    init(size: CGFloat = 32, actionType: IconActionType) {
+        self.size = size
+        self.actionType = actionType
+    }
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: size * 0.5))
+            .foregroundColor(.white)
+            .frame(width: size, height: size)
+            .background(
+                Circle()
+                    .fill(actionType.backgroundColor)
+                    .opacity(configuration.isPressed ? 0.8 : 1.0)
+            )
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}

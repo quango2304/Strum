@@ -354,7 +354,7 @@ struct PlaylistRow: View {
                     }) {
                         Image(systemName: "plus.circle.fill")
                     }
-                    .buttonStyle(ThemedIconButtonStyle(size: 20, isActive: true, theme: colorTheme))
+                    .buttonStyle(ActionIconButtonStyle(size: 20, actionType: .add))
                     .help("Add Music")
 
                     // Edit button
@@ -365,9 +365,8 @@ struct PlaylistRow: View {
                         showingEditPlaylistPopup = true
                     }) {
                         Image(systemName: "pencil")
-                            .foregroundColor(.white)
                     }
-                    .buttonStyle(ThemedIconButtonStyle(size: 20, isActive: true, theme: colorTheme))
+                    .buttonStyle(ActionIconButtonStyle(size: 20, actionType: .edit))
                     .help("Edit Playlist")
 
                     // Delete button
@@ -376,9 +375,8 @@ struct PlaylistRow: View {
                         playlistManager.deletePlaylist(playlist)
                     }) {
                         Image(systemName: "trash")
-                            .foregroundColor(.white)
                     }
-                    .buttonStyle(ThemedIconButtonStyle(size: 20, isActive: true, theme: colorTheme))
+                    .buttonStyle(ActionIconButtonStyle(size: 20, actionType: .delete))
                     .help("Delete Playlist")
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
