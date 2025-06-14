@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		492F56572DFD063A003816F1 /* FLACMetadataKit in Frameworks */ = {isa = PBXBuildFile; productRef = 492F56562DFD063A003816F1 /* FLACMetadataKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		497B2A5F2DFB2C0400E8D123 /* Strum.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Strum.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				492F56572DFD063A003816F1 /* FLACMetadataKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = Strum;
 			packageProductDependencies = (
+				492F56562DFD063A003816F1 /* FLACMetadataKit */,
 			);
 			productName = Strum;
 			productReference = 497B2A5F2DFB2C0400E8D123 /* Strum.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = 497B2A562DFB2C0400E8D123;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				492F56552DFD063A003816F1 /* XCRemoteSwiftPackageReference "FLACMetadataKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 497B2A602DFB2C0400E8D123 /* Products */;
 			projectDirPath = "";
@@ -321,6 +330,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		492F56552DFD063A003816F1 /* XCRemoteSwiftPackageReference "FLACMetadataKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/claucambra/FLACMetadataKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		492F56562DFD063A003816F1 /* FLACMetadataKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 492F56552DFD063A003816F1 /* XCRemoteSwiftPackageReference "FLACMetadataKit" */;
+			productName = FLACMetadataKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 497B2A572DFB2C0400E8D123 /* Project object */;
 }

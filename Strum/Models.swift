@@ -9,6 +9,7 @@ import Foundation
 import AVFoundation
 import AppKit
 import CoreGraphics
+import FLACMetadataKit
 
 // MARK: - Track Model
 struct Track: Identifiable, Codable, Hashable {
@@ -36,7 +37,8 @@ struct Track: Identifiable, Codable, Hashable {
         }
 
         // Extract metadata from the audio file
-        let asset = AVURLAsset(url: url)
+        let fileExtension = url.pathExtension.uppercased()
+        print("🎵 Processing file: \(url.lastPathComponent) (.\(fileExtension))")
 
         // Try to extract metadata first
         var extractedTitle: String?
@@ -45,105 +47,128 @@ struct Track: Identifiable, Codable, Hashable {
         var extractedTrackNumber: Int?
         var extractedArtworkData: Data?
 
-        // Extract metadata using AVFoundation
-        print("🎵 Processing file: \(url.lastPathComponent)")
+        // Try FLACMetadataKit first for FLAC files (artwork extraction)
+        if fileExtension == "FLAC" {
+            print("🎵 Using FLACMetadataKit for FLAC artwork extraction")
+            do {
+                let flacData = try Data(contentsOf: url)
+                let parser = FLACParser(data: flacData)
+                let metadata = try parser.parse()
+                print("🎵 FLACMetadataKit successfully parsed file")
 
-        // Try multiple metadata sources
-        let allMetadata = asset.metadata
-        print("🎵 Found \(allMetadata.count) total metadata items")
-
-        // First, try to extract from all available metadata
-        for item in allMetadata {
-            print("🎵 Checking item with identifier: \(item.identifier?.rawValue ?? "unknown")")
-            print("🎵 Common key: \(item.commonKey?.rawValue ?? "none")")
-
-            // Try common key first
-            if let key = item.commonKey {
-                switch key {
-                case .commonKeyTitle:
-                    if extractedTitle == nil {
-                        extractedTitle = item.stringValue
-                        print("🎵 Found title: \(extractedTitle ?? "nil")")
-                    }
-                case .commonKeyArtist:
-                    if extractedArtist == nil {
-                        extractedArtist = item.stringValue
-                        print("🎵 Found artist: \(extractedArtist ?? "nil")")
-                    }
-                case .commonKeyAlbumName:
-                    if extractedAlbum == nil {
-                        extractedAlbum = item.stringValue
-                        print("🎵 Found album: \(extractedAlbum ?? "nil")")
-                    }
-                case .commonKeyArtwork:
-                    if extractedArtworkData == nil {
-                        extractedArtworkData = item.dataValue
-                        print("🎵 Found artwork data: \(extractedArtworkData?.count ?? 0) bytes")
-                    }
-                default:
-                    break
+                // Extract artwork using FLACMetadataKit
+                if let picture = metadata.picture {
+                    extractedArtworkData = picture.data
+                    print("🎵 ✅ FLACMetadataKit extracted artwork: \(picture.data.count) bytes, MIME: \(picture.mimeType)")
+                } else {
+                    print("🎵 ❌ FLACMetadataKit found no picture in FLAC file")
                 }
-            }
 
-            // Also check by identifier for FLAC-specific tags
-            if let identifier = item.identifier {
-                switch identifier.rawValue {
-                case "org.xiph.flac.TITLE":
-                    if extractedTitle == nil {
-                        extractedTitle = item.stringValue
-                        print("🎵 Found FLAC title: \(extractedTitle ?? "nil")")
-                    }
-                case "org.xiph.flac.ARTIST":
-                    if extractedArtist == nil {
-                        extractedArtist = item.stringValue
-                        print("🎵 Found FLAC artist: \(extractedArtist ?? "nil")")
-                    }
-                case "org.xiph.flac.ALBUM":
-                    if extractedAlbum == nil {
-                        extractedAlbum = item.stringValue
-                        print("🎵 Found FLAC album: \(extractedAlbum ?? "nil")")
-                    }
-                case "org.xiph.flac.TRACKNUMBER":
-                    if extractedTrackNumber == nil {
-                        if let number = item.numberValue {
-                            extractedTrackNumber = number.intValue
-                            print("🎵 Found FLAC track number: \(extractedTrackNumber ?? 0)")
-                        }
-                    }
-                default:
-                    break
-                }
+            } catch {
+                print("🎵 ❌ FLACMetadataKit failed: \(error), falling back to AVFoundation")
             }
         }
 
-        // Special handling for artwork in FLAC files
-        // FLAC artwork is often stored as attached pictures (video streams)
-        if extractedArtworkData == nil {
-            let tracks = asset.tracks
-            for track in tracks {
-                if track.mediaType == .video {
-                    print("🎵 Found video track (likely artwork), attempting to extract...")
+        // Use AVFoundation for missing metadata or non-FLAC files
+        let asset = AVURLAsset(url: url)
+        if extractedArtworkData == nil || extractedTitle == nil || extractedArtist == nil || extractedAlbum == nil {
+            print("🎵 Using AVFoundation for missing metadata or artwork")
+            let allMetadata = asset.metadata
+            print("🎵 Found \(allMetadata.count) total metadata items via AVFoundation")
 
-                    // Use AVAssetImageGenerator to extract the artwork
-                    let imageGenerator = AVAssetImageGenerator(asset: asset)
-                    imageGenerator.appliesPreferredTrackTransform = true
-                    imageGenerator.maximumSize = CGSize(width: 500, height: 500) // Reasonable size limit
+            // Extract from all available metadata
+            for item in allMetadata {
+                print("🎵 Checking item with identifier: \(item.identifier?.rawValue ?? "unknown")")
+                print("🎵 Common key: \(item.commonKey?.rawValue ?? "none")")
 
-                    do {
-                        let cgImage = try imageGenerator.copyCGImage(at: CMTime.zero, actualTime: nil)
-                        let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-
-                        // Convert NSImage to Data
-                        if let tiffData = nsImage.tiffRepresentation,
-                           let bitmapRep = NSBitmapImageRep(data: tiffData),
-                           let jpegData = bitmapRep.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) {
-                            extractedArtworkData = jpegData
-                            print("🎵 Successfully extracted artwork: \(jpegData.count) bytes")
+                // Try common key first
+                if let key = item.commonKey {
+                    switch key {
+                    case .commonKeyTitle:
+                        if extractedTitle == nil {
+                            extractedTitle = item.stringValue
+                            print("🎵 Found title: \(extractedTitle ?? "nil")")
                         }
-                    } catch {
-                        print("🎵 Failed to extract artwork: \(error)")
+                    case .commonKeyArtist:
+                        if extractedArtist == nil {
+                            extractedArtist = item.stringValue
+                            print("🎵 Found artist: \(extractedArtist ?? "nil")")
+                        }
+                    case .commonKeyAlbumName:
+                        if extractedAlbum == nil {
+                            extractedAlbum = item.stringValue
+                            print("🎵 Found album: \(extractedAlbum ?? "nil")")
+                        }
+                    case .commonKeyArtwork:
+                        if extractedArtworkData == nil {
+                            extractedArtworkData = item.dataValue
+                            print("🎵 Found artwork data: \(extractedArtworkData?.count ?? 0) bytes")
+                        }
+                    default:
+                        break
                     }
-                    break
+                }
+
+                // Also check by identifier for FLAC-specific tags
+                if let identifier = item.identifier {
+                    switch identifier.rawValue {
+                    case "org.xiph.flac.TITLE":
+                        if extractedTitle == nil {
+                            extractedTitle = item.stringValue
+                            print("🎵 Found FLAC title: \(extractedTitle ?? "nil")")
+                        }
+                    case "org.xiph.flac.ARTIST":
+                        if extractedArtist == nil {
+                            extractedArtist = item.stringValue
+                            print("🎵 Found FLAC artist: \(extractedArtist ?? "nil")")
+                        }
+                    case "org.xiph.flac.ALBUM":
+                        if extractedAlbum == nil {
+                            extractedAlbum = item.stringValue
+                            print("🎵 Found FLAC album: \(extractedAlbum ?? "nil")")
+                        }
+                    case "org.xiph.flac.TRACKNUMBER":
+                        if extractedTrackNumber == nil {
+                            if let number = item.numberValue {
+                                extractedTrackNumber = number.intValue
+                                print("🎵 Found FLAC track number: \(extractedTrackNumber ?? 0)")
+                            }
+                        }
+                    default:
+                        break
+                    }
+                }
+            }
+
+            // Special handling for artwork in FLAC files via video tracks
+            // FLAC artwork is often stored as attached pictures (video streams)
+            if extractedArtworkData == nil {
+                let tracks = asset.tracks
+                for track in tracks {
+                    if track.mediaType == .video {
+                        print("🎵 Found video track (likely artwork), attempting to extract...")
+
+                        // Use AVAssetImageGenerator to extract the artwork
+                        let imageGenerator = AVAssetImageGenerator(asset: asset)
+                        imageGenerator.appliesPreferredTrackTransform = true
+                        imageGenerator.maximumSize = CGSize(width: 500, height: 500) // Reasonable size limit
+
+                        do {
+                            let cgImage = try imageGenerator.copyCGImage(at: CMTime.zero, actualTime: nil)
+                            let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+
+                            // Convert NSImage to Data
+                            if let tiffData = nsImage.tiffRepresentation,
+                               let bitmapRep = NSBitmapImageRep(data: tiffData),
+                               let jpegData = bitmapRep.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) {
+                                extractedArtworkData = jpegData
+                                print("🎵 ✅ Successfully extracted artwork via AVFoundation: \(jpegData.count) bytes")
+                            }
+                        } catch {
+                            print("🎵 ❌ Failed to extract artwork via AVFoundation: \(error)")
+                        }
+                        break
+                    }
                 }
             }
         }
@@ -162,10 +187,9 @@ struct Track: Identifiable, Codable, Hashable {
         }
 
         // Extract file format and quality information
-        let fileExtension = url.pathExtension.uppercased()
         self.fileFormat = fileExtension
 
-        // Extract bitrate from audio tracks
+        // Extract bitrate and duration using AVFoundation (always needed)
         var extractedBitrate: Int?
         let audioTracks = asset.tracks(withMediaType: .audio)
         if let audioTrack = audioTracks.first {
