@@ -244,16 +244,30 @@ struct Track: Identifiable, Codable, Hashable {
         return (title: filename, artist: nil)
     }
 
+    // Static cache for artwork images to prevent repeated NSImage creation
+    // Use URL as cache key since it's stable across track recreations
+    private static var artworkCache: [URL: NSImage] = [:]
+
     // Helper method to get NSImage from artwork data
     var artwork: NSImage? {
         guard let artworkData = artworkData else {
-            print("🎵 No artwork data for: \(title)")
             return nil
         }
 
-        let image = NSImage(data: artworkData)
-        print("🎵 Created NSImage for \(title): \(image != nil ? "SUCCESS" : "FAILED") from \(artworkData.count) bytes")
-        return image
+        // Check if we have a cached image for this track's URL
+        if let cachedImage = Self.artworkCache[url] {
+            return cachedImage
+        }
+
+        // Create new image and cache it
+        if let image = NSImage(data: artworkData) {
+            Self.artworkCache[url] = image
+            print("🎵 Created and cached NSImage for \(title): SUCCESS from \(artworkData.count) bytes")
+            return image
+        } else {
+            print("🎵 Failed to create NSImage for \(title) from \(artworkData.count) bytes")
+            return nil
+        }
     }
 
     // Helper property to get formatted quality string
