@@ -10,6 +10,7 @@ import AVFoundation
 import AppKit
 import CoreGraphics
 import FLACMetadataKit
+import MediaPlayer
 
 // MARK: - Track Model
 struct Track: Identifiable, Codable, Hashable {
@@ -426,6 +427,8 @@ class MusicPlayerManager: ObservableObject {
     
     init() {
         // No audio session setup needed on macOS
+        setupRemoteCommandCenter()
+        setupAppTerminationHandling()
     }
     
     func play(track: Track, in playlist: Playlist) {
@@ -463,6 +466,7 @@ class MusicPlayerManager: ObservableObject {
             audioPlayer?.play()
             playerState = .playing
             startTimer()
+            updateNowPlayingInfo()
         } catch {
             print("Failed to play track: \(error)")
             print("Track URL: \(track.url)")
@@ -493,12 +497,14 @@ class MusicPlayerManager: ObservableObject {
         audioPlayer?.pause()
         playerState = .paused
         stopTimer()
+        updateNowPlayingInfo()
     }
     
     func resume() {
         audioPlayer?.play()
         playerState = .playing
         startTimer()
+        updateNowPlayingInfo()
     }
     
     func stop() {
@@ -507,11 +513,13 @@ class MusicPlayerManager: ObservableObject {
         playerState = .stopped
         currentTime = 0
         stopTimer()
+        clearNowPlayingInfo()
     }
     
     func seek(to time: TimeInterval) {
         audioPlayer?.currentTime = time
         currentTime = time
+        updateNowPlayingInfo()
     }
     
     func setVolume(_ newVolume: Float) {
@@ -638,7 +646,12 @@ class MusicPlayerManager: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
             if let player = self.audioPlayer {
                 self.currentTime = player.currentTime
-                
+
+                // Update Now Playing info every second (10 timer ticks)
+                if Int(self.currentTime * 10) % 10 == 0 {
+                    self.updateNowPlayingInfo()
+                }
+
                 // Check if track finished
                 if !player.isPlaying && self.playerState == .playing {
                     self.nextTrack()
@@ -650,5 +663,117 @@ class MusicPlayerManager: ObservableObject {
     private func stopTimer() {
         timer?.invalidate()
         timer = nil
+    }
+
+    // MARK: - Now Playing Integration
+
+    private func setupRemoteCommandCenter() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+
+        // Play command
+        commandCenter.playCommand.addTarget { [weak self] _ in
+            self?.resume()
+            return .success
+        }
+
+        // Pause command
+        commandCenter.pauseCommand.addTarget { [weak self] _ in
+            self?.pause()
+            return .success
+        }
+
+        // Toggle play/pause command
+        commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
+            guard let self = self else { return .commandFailed }
+            switch self.playerState {
+            case .playing:
+                self.pause()
+            case .paused:
+                self.resume()
+            case .stopped:
+                if let selectedPlaylist = self.currentPlaylist {
+                    self.playFirstTrack(in: selectedPlaylist)
+                }
+            }
+            return .success
+        }
+
+        // Next track command
+        commandCenter.nextTrackCommand.addTarget { [weak self] _ in
+            self?.nextTrack()
+            return .success
+        }
+
+        // Previous track command
+        commandCenter.previousTrackCommand.addTarget { [weak self] _ in
+            self?.previousTrack()
+            return .success
+        }
+
+        // Change playback position command
+        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            guard let self = self,
+                  let positionEvent = event as? MPChangePlaybackPositionCommandEvent else {
+                return .commandFailed
+            }
+            self.seek(to: positionEvent.positionTime)
+            return .success
+        }
+    }
+
+    private func updateNowPlayingInfo() {
+        var nowPlayingInfo = [String: Any]()
+
+        if let track = currentTrack {
+            nowPlayingInfo[MPMediaItemPropertyTitle] = track.title
+            nowPlayingInfo[MPMediaItemPropertyArtist] = track.artist ?? ""
+            nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = track.album ?? ""
+            nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = track.duration
+            nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
+            nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = playerState == .playing ? 1.0 : 0.0
+
+            // Add artwork if available
+            if let artwork = track.artwork {
+                let mpArtwork = MPMediaItemArtwork(boundsSize: artwork.size) { _ in
+                    return artwork
+                }
+                nowPlayingInfo[MPMediaItemPropertyArtwork] = mpArtwork
+            }
+        }
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+    }
+
+    private func clearNowPlayingInfo() {
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    }
+
+    private func setupAppTerminationHandling() {
+        // Listen for app termination notifications
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.clearNowPlayingInfo()
+        }
+
+        // Also listen for when the app becomes inactive (like when switching apps)
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // Only clear if we're actually stopped
+            if self?.playerState == .stopped {
+                self?.clearNowPlayingInfo()
+            }
+        }
+    }
+
+    deinit {
+        // Clean up when the music player is deallocated
+        clearNowPlayingInfo()
+        NotificationCenter.default.removeObserver(self)
     }
 }

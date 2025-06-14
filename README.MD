@@ -133,5 +133,3 @@ A beautiful, modern music player for macOS built with SwiftUI.
 ## TODO:
 - smooth transition
 - good import performance
-- theme icon
-- control menu bar
