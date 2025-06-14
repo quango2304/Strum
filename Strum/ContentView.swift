@@ -50,7 +50,7 @@ struct ContentView: View {
 
             mainContentView(isCompact: isCompact)
         }
-        .frame(minWidth: 600, minHeight: 500) // Reduced minimum size for better responsiveness
+        .frame(minWidth: 500, minHeight: 700) // Ensure desktop mode by default
         .background(
             ZStack {
                 DesignSystem.colors(for: colorTheme).background
@@ -169,7 +169,7 @@ struct ContentView: View {
                 PlayerControlsView(musicPlayer: musicPlayer, playlistManager: playlistManager, isSearchFieldFocused: $isSearchFieldFocused, isCompact: isCompact)
             }
         }
-        .frame(minWidth: 600, minHeight: 500)
+        .frame(minWidth: 500, minHeight: 700)
         .background(backgroundView)
         .toast(isShowing: $showingToast, message: toastMessage, type: toastType)
         .onAppear(perform: setupToastCallback)

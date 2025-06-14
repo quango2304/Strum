@@ -25,6 +25,7 @@ struct StrumApp: App {
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
+        .defaultSize(width: 1200, height: 800)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Import Files...") {
