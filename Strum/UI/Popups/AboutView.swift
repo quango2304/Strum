@@ -69,6 +69,34 @@ struct AboutView: View {
                                 .font(DesignSystem.Typography.body)
                                 .foregroundColor(.secondary)
                         }
+
+                        // Contact Information
+                        VStack(spacing: DesignSystem.Spacing.xs) {
+                            HStack(spacing: DesignSystem.Spacing.xs) {
+                                Image(systemName: "envelope.circle.fill")
+                                    .foregroundColor(colorTheme.primaryColor)
+                                    .font(.system(size: 14))
+
+                                Text("Contact for bugs & feature requests:")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                            }
+
+                            Button(action: {
+                                if let url = URL(string: "mailto:quango2304@gmail.com") {
+                                    NSWorkspace.shared.open(url)
+                                }
+                            }) {
+                                Text("quango2304@gmail.com")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(colorTheme.primaryColor)
+                                    .underline()
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .onHover { isHovered in
+                                NSCursor.pointingHand.set()
+                            }
+                        }
                     }
                 }
                 
