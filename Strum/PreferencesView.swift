@@ -9,7 +9,6 @@ import SwiftUI
 
 struct PreferencesView: View {
     @ObservedObject var preferencesManager: PreferencesManager
-    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         ZStack {
@@ -19,7 +18,7 @@ struct PreferencesView: View {
                 .opacity(0.5)
                 .ignoresSafeArea()
                 .onTapGesture {
-                    dismiss()
+                    preferencesManager.showPreferences = false
                 }
 
             // Main content
@@ -33,7 +32,7 @@ struct PreferencesView: View {
                     Spacer()
 
                     Button(action: {
-                        dismiss()
+                        preferencesManager.showPreferences = false
                     }) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(.secondary)
@@ -100,7 +99,7 @@ struct PreferencesView: View {
             .frame(width: 480, height: 520)
         }
         .onKeyPress(.escape) {
-            dismiss()
+            preferencesManager.showPreferences = false
             return .handled
         }
     }

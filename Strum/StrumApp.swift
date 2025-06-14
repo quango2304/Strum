@@ -69,13 +69,5 @@ struct StrumApp: App {
                 .keyboardShortcut(.rightArrow, modifiers: .command)
             }
         }
-
-        // Preferences Window
-        WindowGroup("Preferences", id: "preferences") {
-            PreferencesView(preferencesManager: preferencesManager)
-        }
-        .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize)
-        .defaultPosition(.center)
     }
 }
