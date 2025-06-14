@@ -318,6 +318,9 @@ struct TrackListView: View {
             colorTheme: colorTheme,
             isCompact: isCompact,
             onPlay: {
+                // Clear search field and unfocus it when playing a track
+                searchText = ""
+                isSearchFieldFocused = false
                 musicPlayer.play(track: track, in: playlist)
             },
             isSearchFieldFocused: $isSearchFieldFocused
@@ -626,8 +629,6 @@ struct TrackRow: View {
             isHovered = hovering
         }
         .onTapGesture {
-            // Unfocus search field when clicking on track row
-            isSearchFieldFocused = false
             onPlay()
         }
         .background(
