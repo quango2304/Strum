@@ -24,26 +24,24 @@ struct PlayerControlsView: View {
                     HStack(spacing: 12) {
                         // Track Info (compact)
                         HStack(spacing: 8) {
-                            // Album Art (smaller)
-                            Group {
-                                if let artwork = musicPlayer.currentTrack?.artwork {
-                                    Image(nsImage: artwork)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 40, height: 40)
-                                        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.sm))
-                                        .shadow(color: DesignSystem.Shadow.light, radius: 2, x: 0, y: 1)
-                                } else {
-                                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.sm)
-                                        .fill(DesignSystem.Colors.surfaceSecondary)
-                                        .frame(width: 40, height: 40)
-                                        .overlay(
-                                            Image(systemName: "music.note")
-                                                .foregroundColor(.secondary)
-                                                .font(.system(size: 12))
-                                        )
-                                        .shadow(color: DesignSystem.Shadow.light, radius: 1, x: 0, y: 1)
-                                }
+                            // Rotating CD Album Art (bigger, only for current track)
+                            if musicPlayer.currentTrack != nil {
+                                RotatingCDArt(
+                                    artwork: musicPlayer.currentTrack?.artwork,
+                                    isPlaying: musicPlayer.playerState == .playing,
+                                    size: 60
+                                )
+                            } else {
+                                // Placeholder when no track
+                                Circle()
+                                    .fill(Color.secondary.opacity(0.15))
+                                    .frame(width: 60, height: 60)
+                                    .overlay(
+                                        Image(systemName: "music.note")
+                                            .font(.system(size: 20, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                            .opacity(0.6)
+                                    )
                             }
 
                             VStack(alignment: .leading, spacing: 2) {
@@ -115,8 +113,11 @@ struct PlayerControlsView: View {
                                         }
                                     }
                                 }) {
-                                    Image(systemName: musicPlayer.playerState == .playing ? "pause.fill" : "play.fill")
-                                        .foregroundColor(.white)
+                                    AnimatedPlayPauseIcon(
+                                        isPlaying: musicPlayer.playerState == .playing,
+                                        size: 22
+                                    )
+                                    .foregroundColor(.white)
                                 }
                                 .buttonStyle(ThemedIconButtonStyle(size: 44, isActive: true, theme: colorTheme, useGradient: true))
                                 .disabled(musicPlayer.currentTrack == nil && playlistManager.selectedPlaylist?.tracks.isEmpty != false)
@@ -165,26 +166,24 @@ struct PlayerControlsView: View {
                         HStack(spacing: 16) {
                             // Track Info
                             HStack(spacing: 12) {
-                            // Album Art
-                            Group {
-                                if let artwork = musicPlayer.currentTrack?.artwork {
-                                    Image(nsImage: artwork)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 50, height: 50)
-                                        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md))
-                                        .shadow(color: DesignSystem.Shadow.medium, radius: 4, x: 0, y: 2)
-                                } else {
-                                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
-                                        .fill(DesignSystem.Colors.surfaceSecondary)
-                                        .frame(width: 50, height: 50)
-                                        .overlay(
-                                            Image(systemName: "music.note")
-                                                .foregroundColor(.secondary)
-                                                .font(.system(size: 16))
-                                        )
-                                        .shadow(color: DesignSystem.Shadow.light, radius: 2, x: 0, y: 1)
-                                }
+                            // Rotating CD Album Art (bigger, only for current track)
+                            if musicPlayer.currentTrack != nil {
+                                RotatingCDArt(
+                                    artwork: musicPlayer.currentTrack?.artwork,
+                                    isPlaying: musicPlayer.playerState == .playing,
+                                    size: 70
+                                )
+                            } else {
+                                // Placeholder when no track
+                                Circle()
+                                    .fill(Color.secondary.opacity(0.15))
+                                    .frame(width: 70, height: 70)
+                                    .overlay(
+                                        Image(systemName: "music.note")
+                                            .font(.system(size: 24, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                            .opacity(0.6)
+                                    )
                             }
 
                             VStack(alignment: .leading, spacing: 3) {
@@ -243,8 +242,11 @@ struct PlayerControlsView: View {
                                             }
                                         }
                                     }) {
-                                        Image(systemName: musicPlayer.playerState == .playing ? "pause.fill" : "play.fill")
-                                            .foregroundColor(.white)
+                                        AnimatedPlayPauseIcon(
+                                            isPlaying: musicPlayer.playerState == .playing,
+                                            size: 26
+                                        )
+                                        .foregroundColor(.white)
                                     }
                                     .buttonStyle(ThemedIconButtonStyle(size: 52, isActive: true, theme: colorTheme, useGradient: true))
                                     .disabled(musicPlayer.currentTrack == nil && playlistManager.selectedPlaylist?.tracks.isEmpty != false)
@@ -301,7 +303,7 @@ struct PlayerControlsView: View {
                 }
             }
             .padding(.horizontal, DesignSystem.Spacing.xl)
-            .padding(.vertical, isCompact ? DesignSystem.Spacing.md : DesignSystem.Spacing.xl)
+            .padding(.vertical, isCompact ? DesignSystem.Spacing.lg : DesignSystem.Spacing.xl)
             .background(
                 ZStack {
                     // Base background
@@ -313,7 +315,7 @@ struct PlayerControlsView: View {
                 .shadow(color: DesignSystem.Shadow.light, radius: 4, x: 0, y: -1)
             )
         }
-        .frame(height: isCompact ? 160 : 120) // Standard height for single row layout
+        .frame(height: isCompact ? 180 : 140) // Increased height to accommodate larger rotating CD
     }
 
     // MARK: - Helper Views
@@ -391,7 +393,7 @@ struct ThemedProgressControl: View {
     let theme: ColorTheme
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             // Custom themed slider
             ThemedSlider(
                 value: Binding(
@@ -497,6 +499,148 @@ struct ThemedSlider: View {
         }
         .frame(height: max(trackHeight, thumbSize))
         .animation(.easeInOut(duration: 0.15), value: isDragging)
+    }
+}
+
+// MARK: - Rotating CD Art Component
+struct RotatingCDArt: View {
+    let artwork: NSImage?
+    let isPlaying: Bool
+    let size: CGFloat
+
+    @State private var rotationAngle: Double = 0
+
+    // Create a unique identifier for the artwork to prevent animation between different images
+    private var artworkID: String {
+        if let artwork = artwork {
+            return "\(artwork.hash)"
+        } else {
+            return "no-artwork"
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            // CD Base (dark circle with hole in center)
+            Circle()
+                .fill(
+                    RadialGradient(
+                        gradient: Gradient(colors: [
+                            Color.black.opacity(0.8),
+                            Color.black.opacity(0.6),
+                            Color.black.opacity(0.9)
+                        ]),
+                        center: .center,
+                        startRadius: size * 0.1,
+                        endRadius: size * 0.5
+                    )
+                )
+                .frame(width: size, height: size)
+
+            // Album artwork (if available) - with unique ID to prevent cross-fade animation
+            if let artwork = artwork {
+                Image(nsImage: artwork)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: size * 0.85, height: size * 0.85)
+                    .clipShape(Circle())
+                    .id(artworkID) // Unique ID prevents animation between different artworks
+            } else {
+                // Default music note for no artwork
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: size * 0.85, height: size * 0.85)
+                    .overlay(
+                        Image(systemName: "music.note")
+                            .font(.system(size: size * 0.3, weight: .medium))
+                            .foregroundColor(.secondary)
+                    )
+                    .id("no-artwork") // Consistent ID for no artwork state
+            }
+
+            // Center hole (small dark circle)
+            Circle()
+                .fill(Color.black.opacity(0.9))
+                .frame(width: size * 0.15, height: size * 0.15)
+
+            // Subtle highlight lines for CD effect
+            Circle()
+                .stroke(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.white.opacity(0.3),
+                            Color.clear,
+                            Color.white.opacity(0.1)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+                .frame(width: size * 0.9, height: size * 0.9)
+        }
+        .rotationEffect(.degrees(rotationAngle))
+        .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
+        .onAppear {
+            if isPlaying {
+                startRotation()
+            }
+        }
+        .onChange(of: isPlaying) { _, newValue in
+            if newValue {
+                startRotation()
+            } else {
+                stopRotation()
+            }
+        }
+        .onChange(of: artworkID) { _, _ in
+            // Reset rotation when artwork changes to prevent animation between different images
+            rotationAngle = 0
+            if isPlaying {
+                startRotation()
+            }
+        }
+    }
+
+    private func startRotation() {
+        // Start smooth, slow, infinite rotation (8 seconds per full rotation)
+        withAnimation(.linear(duration: 8.0).repeatForever(autoreverses: false)) {
+            rotationAngle = 360
+        }
+    }
+
+    private func stopRotation() {
+        // Stop the animation smoothly without changing current position
+        withAnimation(.easeOut(duration: 0.5)) {
+            // Keep the current rotation angle, just stop the infinite animation
+            let currentAngle = rotationAngle.truncatingRemainder(dividingBy: 360)
+            rotationAngle = currentAngle
+        }
+    }
+}
+
+// MARK: - Animated Play/Pause Icon Component
+struct AnimatedPlayPauseIcon: View {
+    let isPlaying: Bool
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            // Play icon
+            Image(systemName: "play.fill")
+                .font(.system(size: size, weight: .medium))
+                .opacity(isPlaying ? 0 : 1)
+                .scaleEffect(isPlaying ? 0.7 : 1.0)
+                .rotationEffect(.degrees(isPlaying ? 90 : 0))
+
+            // Pause icon
+            Image(systemName: "pause.fill")
+                .font(.system(size: size, weight: .medium))
+                .opacity(isPlaying ? 1 : 0)
+                .scaleEffect(isPlaying ? 1.0 : 0.7)
+                .rotationEffect(.degrees(isPlaying ? 0 : -90))
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8, blendDuration: 0), value: isPlaying)
     }
 }
 

@@ -247,26 +247,39 @@ struct Track: Identifiable, Codable, Hashable {
     // Static cache for artwork images to prevent repeated NSImage creation
     // Use URL as cache key since it's stable across track recreations
     private static var artworkCache: [URL: NSImage] = [:]
+    private static let cacheQueue = DispatchQueue(label: "artwork.cache", qos: .userInitiated, attributes: .concurrent)
 
-    // Helper method to get NSImage from artwork data
+    // Helper method to get NSImage from artwork data with thread-safe caching
     var artwork: NSImage? {
         guard let artworkData = artworkData else {
             return nil
         }
 
-        // Check if we have a cached image for this track's URL
-        if let cachedImage = Self.artworkCache[url] {
-            return cachedImage
-        }
+        // Thread-safe cache access
+        return Self.cacheQueue.sync {
+            // Check if we have a cached image for this track's URL
+            if let cachedImage = Self.artworkCache[url] {
+                return cachedImage
+            }
 
-        // Create new image and cache it
-        if let image = NSImage(data: artworkData) {
-            Self.artworkCache[url] = image
-            print("🎵 Created and cached NSImage for \(title): SUCCESS from \(artworkData.count) bytes")
-            return image
-        } else {
-            print("🎵 Failed to create NSImage for \(title) from \(artworkData.count) bytes")
-            return nil
+            // Create new image and cache it
+            if let image = NSImage(data: artworkData) {
+                Self.cacheQueue.async(flags: .barrier) {
+                    Self.artworkCache[url] = image
+                }
+                print("🎵 Created and cached NSImage for \(title): SUCCESS from \(artworkData.count) bytes")
+                return image
+            } else {
+                print("🎵 Failed to create NSImage for \(title) from \(artworkData.count) bytes")
+                return nil
+            }
+        }
+    }
+
+    // Helper method to clear artwork cache if needed
+    static func clearArtworkCache() {
+        cacheQueue.async(flags: .barrier) {
+            artworkCache.removeAll()
         }
     }
 

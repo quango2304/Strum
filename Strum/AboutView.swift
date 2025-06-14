@@ -179,15 +179,11 @@ struct AboutView: View {
     ]
     
     private let keyFeatures = [
-        "10 Beautiful Color Themes",
+        "Color Themes",
         "Playlist Management & Organization",
         "Drag & Drop File Import",
-        "Metadata Extraction & Display",
-        "Shuffle & Repeat Modes",
-        "macOS Control Center Style UI",
         "Keyboard Shortcuts Support",
         "Responsive Design",
-        "Toast Notifications",
         "Search & Filter Tracks"
     ]
 }

@@ -44,6 +44,11 @@ struct TrackListView: View {
         }
     }
 
+    // Helper function to get track number
+    private func getTrackNumber(for track: Track) -> Int {
+        return (playlist.tracks.firstIndex(where: { $0.id == track.id }) ?? 0) + 1
+    }
+
     var body: some View {
         GeometryReader { geometry in
             let isCompact = geometry.size.width < 1000
@@ -288,20 +293,18 @@ struct TrackListView: View {
 
     @ViewBuilder
     private func trackListView(isCompact: Bool) -> some View {
-        List {
-            ForEach(Array(filteredTracks.enumerated()), id: \.element.id) { index, track in
-                trackRowView(track: track, isCompact: isCompact)
-            }
-            .onMove(perform: handleMove)
-            .onDelete(perform: handleDelete)
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(filteredTracks, id: \.id) { track in
+                    trackRowView(track: track, isCompact: isCompact)
+                        .id(track.id)
+                }
 
-            // Add padding at the bottom to ensure last track is fully visible
-            Color.clear
-                .frame(height: DesignSystem.Spacing.xl)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
+                // Add padding at the bottom to ensure last track is fully visible
+                Color.clear
+                    .frame(height: DesignSystem.Spacing.xl)
+            }
         }
-        .listStyle(PlainListStyle())
         .contentShape(Rectangle())
         .onTapGesture {
             isSearchFieldFocused = false
@@ -312,7 +315,7 @@ struct TrackListView: View {
     private func trackRowView(track: Track, isCompact: Bool) -> some View {
         TrackRow(
             track: track,
-            trackNumber: playlist.tracks.firstIndex(where: { $0.id == track.id })! + 1,
+            trackNumber: getTrackNumber(for: track),
             isPlaying: musicPlayer.currentTrack?.id == track.id && musicPlayer.playerState == .playing,
             isPaused: musicPlayer.currentTrack?.id == track.id && musicPlayer.playerState == .paused,
             colorTheme: colorTheme,
@@ -527,27 +530,16 @@ struct TrackRow: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            // Small artwork thumbnail
-            Group {
-                if let artwork = track.artwork {
-                    Image(nsImage: artwork)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 28, height: 28)
-                        .clipShape(RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.sm))
-                        .shadow(color: DesignSystem.Shadow.light, radius: 1, x: 0, y: 1)
-                } else {
-                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.sm)
-                        .fill(DesignSystem.Colors.surfaceSecondary)
-                        .frame(width: 28, height: 28)
-                        .overlay(
-                            Image(systemName: "music.note")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.primary)
-                                .opacity(0.8)
-                        )
-                        .shadow(color: DesignSystem.Shadow.light, radius: 1, x: 0, y: 1)
-                }
+            // Music note icon with round background
+            ZStack {
+                Circle()
+                    .fill(Color.secondary.opacity(0.15))
+                    .frame(width: 28, height: 28)
+
+                Image(systemName: "music.note")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .opacity(0.8)
             }
 
             // Track Number / Play Button
@@ -634,7 +626,7 @@ struct TrackRow: View {
         .background(
             Group {
                 if isPlaying || isPaused {
-                    // Subtle active track background
+                    // Subtle active track background with margins
                     ZStack {
                         RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
                             .fill(.ultraThinMaterial)
@@ -644,8 +636,9 @@ struct TrackRow: View {
                             .fill(colorTheme.primaryColor)
                             .opacity(0.2)
                     }
+                    .padding(.horizontal, DesignSystem.Spacing.md)
                 } else if isHovered {
-                    // Subtle hover state
+                    // Subtle hover state with margins
                     ZStack {
                         RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
                             .fill(.ultraThinMaterial)
@@ -655,6 +648,7 @@ struct TrackRow: View {
                             .fill(Color.primary)
                             .opacity(0.08)
                     }
+                    .padding(.horizontal, DesignSystem.Spacing.md)
                 } else {
                     // Transparent
                     RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.md)
@@ -673,6 +667,8 @@ struct TrackRow: View {
         return String(format: "%d:%02d", minutes, seconds)
     }
 }
+
+
 
 #Preview {
     struct PreviewWrapper: View {
