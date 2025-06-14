@@ -263,3 +263,88 @@ extension View {
         modifier(ToastModifier(isShowing: isShowing, message: message, type: type))
     }
 }
+
+// MARK: - Progress Popup
+struct ProgressPopup: View {
+    let isShowing: Bool
+    let progress: Double
+    let currentFile: String
+    let totalFiles: Int
+    let processedFiles: Int
+    @Environment(\.colorTheme) private var colorTheme
+
+    var body: some View {
+        ZStack {
+            // Native macOS-style transparent blur background
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .opacity(0.3)
+                .ignoresSafeArea()
+
+            // Popup content with fixed height
+            VStack(spacing: DesignSystem.Spacing.xl) {
+                // Icon and Title
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.system(size: 40))
+                        .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
+
+                    Text("Importing Files")
+                        .font(DesignSystem.Typography.title2)
+                        .foregroundColor(.primary)
+                }
+
+                // Progress information with fixed layout
+                VStack(spacing: DesignSystem.Spacing.lg) {
+                    // Progress bar section
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.sm) {
+                        HStack {
+                            Text("Progress")
+                                .font(DesignSystem.Typography.caption)
+                                .foregroundColor(.secondary)
+
+                            Spacer()
+
+                            Text("\(processedFiles) of \(totalFiles)")
+                                .font(DesignSystem.Typography.caption)
+                                .foregroundColor(.secondary)
+                                .monospacedDigit() // Prevents width changes
+                        }
+
+                        ProgressView(value: progress)
+                            .progressViewStyle(LinearProgressViewStyle(tint: DesignSystem.colors(for: colorTheme).primary))
+                            .scaleEffect(y: 1.5)
+                    }
+
+                    // Current file section with fixed height
+                    VStack(alignment: .leading, spacing: DesignSystem.Spacing.xs) {
+                        Text("Current File")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(.secondary)
+
+                        // Fixed height container for current file text
+                        HStack {
+                            Text(currentFile.isEmpty ? "Preparing..." : currentFile)
+                                .font(DesignSystem.Typography.body)
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Spacer()
+                        }
+                        .frame(height: 20) // Fixed height to prevent layout shifts
+                    }
+                }
+            }
+            .padding(DesignSystem.Spacing.xxxl)
+            .background(
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.xl)
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+            )
+            .frame(width: 380, height: 220) // Fixed dimensions to prevent size changes
+        }
+        .opacity(isShowing ? 1 : 0)
+        .scaleEffect(isShowing ? 1 : 0.8)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isShowing)
+    }
+}

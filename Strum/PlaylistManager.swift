@@ -20,6 +20,13 @@ class PlaylistManager: ObservableObject {
     @Published var playlists: [Playlist] = []
     @Published var selectedPlaylist: Playlist?
 
+    // Progress tracking for imports
+    @Published var isImporting: Bool = false
+    @Published var importProgress: Double = 0.0
+    @Published var importCurrentFile: String = ""
+    @Published var importTotalFiles: Int = 0
+    @Published var importProcessedFiles: Int = 0
+
     // Callback for showing toast notifications
     var onImportSuccess: ((String) -> Void)?
 
@@ -79,30 +86,66 @@ class PlaylistManager: ObservableObject {
         openPanel.canChooseDirectories = false
         openPanel.canChooseFiles = true
         openPanel.allowedContentTypes = [.audio, .mp3, .wav, .aiff, .mpeg4Audio, .flac]
-        
-        if openPanel.runModal() == .OK {
-            let tracks = openPanel.urls.compactMap { url -> Track? in
-                // Create security-scoped bookmark
-                guard url.startAccessingSecurityScopedResource() else {
-                    print("Failed to access security scoped resource: \(url)")
-                    return nil
-                }
-                defer { url.stopAccessingSecurityScopedResource() }
-                
-                return Track(url: url)
-            }
-            
-            guard let playlist = selectedPlaylist else { return }
-            
-            DispatchQueue.main.async {
-                for track in tracks {
-                    playlist.addTrack(track)
-                }
-                self.savePlaylists()
 
-                // Show success toast
-                let message = tracks.count == 1 ? "1 file imported successfully" : "\(tracks.count) files imported successfully"
-                self.onImportSuccess?(message)
+        if openPanel.runModal() == .OK {
+            let urls = openPanel.urls
+            guard let playlist = selectedPlaylist else { return }
+
+            // Start progress tracking with immediate total count
+            DispatchQueue.main.async {
+                self.isImporting = true
+                self.importProgress = 0.0
+                self.importTotalFiles = urls.count
+                self.importProcessedFiles = 0
+                self.importCurrentFile = urls.count == 1 ? "Importing 1 file..." : "Importing \(urls.count) files..."
+            }
+
+            // Process files in background
+            DispatchQueue.global(qos: .userInitiated).async {
+                var successfulTracks: [Track] = []
+                let totalFiles = urls.count
+
+                for (index, url) in urls.enumerated() {
+                    let currentIndex = index + 1
+
+                    // Update current file on main thread
+                    DispatchQueue.main.async {
+                        self.importCurrentFile = url.lastPathComponent
+                        self.importProcessedFiles = currentIndex
+                        self.importProgress = Double(currentIndex) / Double(totalFiles)
+                    }
+
+                    // Create security-scoped bookmark
+                    guard url.startAccessingSecurityScopedResource() else {
+                        print("Failed to access security scoped resource: \(url)")
+                        continue
+                    }
+                    defer { url.stopAccessingSecurityScopedResource() }
+
+                    let track = Track(url: url)
+                    successfulTracks.append(track)
+                }
+
+                // Add tracks to playlist on main thread
+                DispatchQueue.main.async {
+                    for track in successfulTracks {
+                        playlist.addTrack(track)
+                    }
+                    self.savePlaylists()
+
+                    // Complete progress and show success
+                    self.importProgress = 1.0
+                    self.importCurrentFile = "Import complete"
+
+                    // Hide progress after a brief delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        self.isImporting = false
+
+                        // Show success toast
+                        let message = successfulTracks.count == 1 ? "1 file imported successfully" : "\(successfulTracks.count) files imported successfully"
+                        self.onImportSuccess?(message)
+                    }
+                }
             }
         }
     }
@@ -112,59 +155,118 @@ class PlaylistManager: ObservableObject {
         openPanel.allowsMultipleSelection = false
         openPanel.canChooseDirectories = true
         openPanel.canChooseFiles = false
-        
+
         if openPanel.runModal() == .OK {
             guard let folderURL = openPanel.urls.first else { return }
-            
+
             // Create security-scoped bookmark
             guard folderURL.startAccessingSecurityScopedResource() else {
                 print("Failed to access security scoped resource: \(folderURL)")
                 return
             }
             defer { folderURL.stopAccessingSecurityScopedResource() }
-            
-            let tracks = findAudioFiles(in: folderURL)
-            
-            guard let playlist = selectedPlaylist else { return }
-            
-            DispatchQueue.main.async {
-                for track in tracks {
-                    playlist.addTrack(track)
-                }
-                self.savePlaylists()
 
-                // Show success toast
-                let message = tracks.count == 1 ? "1 file imported successfully" : "\(tracks.count) files imported successfully"
-                self.onImportSuccess?(message)
-            }
+            importFolderWithProgress(folderURL)
         }
     }
 
     func importFolderAtURL(_ folderURL: URL) {
         print("importFolderAtURL called with: \(folderURL)")
-
         // For drag and drop, we don't need security scoped access
         // The system grants temporary access to dragged files
-        let tracks = findAudioFiles(in: folderURL)
-        print("Found \(tracks.count) audio files")
+        importFolderWithProgress(folderURL)
+    }
 
-        guard let playlist = selectedPlaylist else {
-            print("No selected playlist")
-            return
+    private func importFolderWithProgress(_ folderURL: URL) {
+        guard let playlist = selectedPlaylist else { return }
+
+        // Start progress tracking
+        DispatchQueue.main.async {
+            self.isImporting = true
+            self.importProgress = 0.0
+            self.importCurrentFile = "Scanning folder..."
+            self.importTotalFiles = 0
+            self.importProcessedFiles = 0
         }
 
-        print("Adding tracks to playlist: \(playlist.name)")
-        DispatchQueue.main.async {
-            for track in tracks {
-                print("Adding track: \(track.title)")
-                playlist.addTrack(track)
-            }
-            print("Saving playlists")
-            self.savePlaylists()
+        // Process folder in background
+        DispatchQueue.global(qos: .userInitiated).async {
+            // First, quickly count files to show total
+            let fileCount = self.countAudioFiles(in: folderURL)
 
-            // Show success toast
-            let message = tracks.count == 1 ? "1 file imported successfully" : "\(tracks.count) files imported successfully"
-            self.onImportSuccess?(message)
+            // Update UI with total count immediately
+            DispatchQueue.main.async {
+                self.importTotalFiles = fileCount
+                self.importCurrentFile = fileCount > 0 ? "Found \(fileCount) audio files..." : "No audio files found"
+            }
+
+            guard fileCount > 0 else {
+                DispatchQueue.main.async {
+                    self.isImporting = false
+                }
+                return
+            }
+
+            // Now process files with progress
+            let tracks = self.findAudioFilesWithProgress(in: folderURL)
+            print("Found \(tracks.count) audio files")
+
+            guard !tracks.isEmpty else {
+                DispatchQueue.main.async {
+                    self.isImporting = false
+                }
+                return
+            }
+
+            // Update status for adding tracks
+            DispatchQueue.main.async {
+                self.importCurrentFile = "Adding tracks to playlist..."
+                self.importProgress = 0.0
+                self.importProcessedFiles = 0
+            }
+
+            // Add tracks to playlist in batches to avoid blocking UI
+            let batchSize = 10
+            let batches = tracks.chunked(into: batchSize)
+
+            for (batchIndex, batch) in batches.enumerated() {
+                DispatchQueue.main.async {
+                    let startIndex = batchIndex * batchSize
+
+                    for (index, track) in batch.enumerated() {
+                        playlist.addTrack(track)
+                        let currentCount = startIndex + index + 1
+                        self.importProcessedFiles = currentCount
+                        self.importProgress = Double(currentCount) / Double(tracks.count)
+
+                        // Update current file display for the last track in batch
+                        if index == batch.count - 1 {
+                            self.importCurrentFile = track.title
+                        }
+                    }
+
+                    // If this is the last batch, complete the import
+                    if batchIndex == batches.count - 1 {
+                        self.savePlaylists()
+
+                        // Complete progress
+                        self.importCurrentFile = "Import complete"
+                        self.importProgress = 1.0
+
+                        // Hide progress after a brief delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                            self.isImporting = false
+
+                            // Show success toast
+                            let message = tracks.count == 1 ? "1 file imported successfully" : "\(tracks.count) files imported successfully"
+                            self.onImportSuccess?(message)
+                        }
+                    }
+                }
+
+                // Small delay between batches to keep UI responsive
+                Thread.sleep(forTimeInterval: 0.01)
+            }
         }
     }
 
@@ -172,27 +274,94 @@ class PlaylistManager: ObservableObject {
         var tracks: [Track] = []
         let fileManager = FileManager.default
         let audioExtensions = ["mp3", "wav", "aiff", "m4a", "flac", "aac"]
-        
+
         guard let enumerator = fileManager.enumerator(at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]) else {
             return tracks
         }
-        
+
         for case let fileURL as URL in enumerator {
             guard let resourceValues = try? fileURL.resourceValues(forKeys: [.isRegularFileKey]),
                   resourceValues.isRegularFile == true else {
                 continue
             }
-            
+
             let fileExtension = fileURL.pathExtension.lowercased()
             if audioExtensions.contains(fileExtension) {
                 let track = Track(url: fileURL)
                 tracks.append(track)
             }
         }
-        
+
         return tracks.sorted { $0.title < $1.title }
     }
-    
+
+    private func findAudioFilesWithProgress(in directory: URL) -> [Track] {
+        var tracks: [Track] = []
+        let fileManager = FileManager.default
+        let audioExtensions = ["mp3", "wav", "aiff", "m4a", "flac", "aac"]
+
+        guard let enumerator = fileManager.enumerator(at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]) else {
+            return tracks
+        }
+
+        var fileURLs: [URL] = []
+
+        // First pass: collect all audio file URLs (we already know the count)
+        for case let fileURL as URL in enumerator {
+            guard let resourceValues = try? fileURL.resourceValues(forKeys: [.isRegularFileKey]),
+                  resourceValues.isRegularFile == true else {
+                continue
+            }
+
+            let fileExtension = fileURL.pathExtension.lowercased()
+            if audioExtensions.contains(fileExtension) {
+                fileURLs.append(fileURL)
+            }
+        }
+
+        // Second pass: create tracks with progress updates
+        let totalFiles = fileURLs.count
+        for (index, fileURL) in fileURLs.enumerated() {
+            // Update UI every 5 files or on last file for better responsiveness
+            if index % 5 == 0 || index == totalFiles - 1 {
+                DispatchQueue.main.async {
+                    self.importCurrentFile = "Processing: \(fileURL.lastPathComponent)"
+                    self.importProgress = Double(index + 1) / Double(totalFiles)
+                    self.importProcessedFiles = index + 1
+                }
+            }
+
+            let track = Track(url: fileURL)
+            tracks.append(track)
+        }
+
+        return tracks.sorted { $0.title < $1.title }
+    }
+
+    private func countAudioFiles(in directory: URL) -> Int {
+        let fileManager = FileManager.default
+        let audioExtensions = ["mp3", "wav", "aiff", "m4a", "flac", "aac"]
+        var count = 0
+
+        guard let enumerator = fileManager.enumerator(at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]) else {
+            return 0
+        }
+
+        for case let fileURL as URL in enumerator {
+            guard let resourceValues = try? fileURL.resourceValues(forKeys: [.isRegularFileKey]),
+                  resourceValues.isRegularFile == true else {
+                continue
+            }
+
+            let fileExtension = fileURL.pathExtension.lowercased()
+            if audioExtensions.contains(fileExtension) {
+                count += 1
+            }
+        }
+
+        return count
+    }
+
     func savePlaylists() {
         // Cancel any pending save operation
         saveWorkItem?.cancel()
@@ -232,6 +401,15 @@ class PlaylistManager: ObservableObject {
             playlists = try JSONDecoder().decode([Playlist].self, from: data)
         } catch {
             print("Failed to load playlists: \(error)")
+        }
+    }
+}
+
+// MARK: - Array Extension for Batching
+extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
         }
     }
 }

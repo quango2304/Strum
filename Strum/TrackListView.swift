@@ -453,23 +453,12 @@ struct TrackListView: View {
         let fileExists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
 
         if fileExists && isDirectory.boolValue {
-            // It's a folder - import all audio files from it
-            importFolderContents(url: url)
+            // It's a folder - use PlaylistManager's progress system
+            playlistManager.selectPlaylist(playlist)
+            playlistManager.importFolderAtURL(url)
         } else if fileExists {
             // It's a file - check if it's an audio file and import it
             importSingleFile(url: url)
-        }
-    }
-
-    private func importFolderContents(url: URL) {
-        let tracks = findAudioFiles(in: url)
-
-        DispatchQueue.main.async {
-            for track in tracks {
-                playlist.addTrack(track)
-            }
-            // Save the playlists to persist the changes
-            playlistManager.savePlaylists()
         }
     }
 
@@ -482,7 +471,8 @@ struct TrackListView: View {
             return // Not an audio file
         }
 
-        // Create track from file
+        // For single files, we can import directly without progress popup
+        // since it's fast enough
         let track = Track(url: url)
 
         DispatchQueue.main.async {

@@ -123,6 +123,16 @@ struct ContentView: View {
                 }
             }
         )
+        .overlay(
+            // Progress Popup - Centered in entire app window
+            ProgressPopup(
+                isShowing: playlistManager.isImporting,
+                progress: playlistManager.importProgress,
+                currentFile: playlistManager.importCurrentFile,
+                totalFiles: playlistManager.importTotalFiles,
+                processedFiles: playlistManager.importProcessedFiles
+            )
+        )
         .onKeyPress(.escape) {
             // Global ESC key handling to close any open popup
             if preferencesManager.showAbout {
