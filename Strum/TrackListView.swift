@@ -328,6 +328,8 @@ struct TrackListView: View {
         // Only allow move operations when not filtering
         if searchText.isEmpty {
             playlist.moveTrack(from: source, to: destination)
+            // Save the playlists to persist the changes
+            playlistManager.savePlaylists()
         }
     }
 
@@ -339,6 +341,8 @@ struct TrackListView: View {
                 playlist.removeTrack(at: originalIndex)
             }
         }
+        // Save the playlists to persist the changes
+        playlistManager.savePlaylists()
     }
 
     @ViewBuilder

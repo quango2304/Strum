@@ -66,6 +66,7 @@ struct ContentView: View {
         .sheet(isPresented: $preferencesManager.showPreferences) {
             PreferencesView(preferencesManager: preferencesManager)
         }
+        .overlay(aboutPopupOverlay)
         .overlay(
             // Add Playlist Popup - Centered in entire app window
             Group {
@@ -143,6 +144,10 @@ struct ContentView: View {
         )
         .onKeyPress(.escape) {
             // Global ESC key handling to close any open popup
+            if preferencesManager.showAbout {
+                preferencesManager.showAbout = false
+                return .handled
+            }
             if showingAddPlaylistPopup {
                 showingAddPlaylistPopup = false
                 return .handled
@@ -379,6 +384,15 @@ struct ContentView: View {
                     pendingFiles: pendingFiles,
                     onSave: playlistNamePopupSaveAction
                 )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var aboutPopupOverlay: some View {
+        Group {
+            if preferencesManager.showAbout {
+                AboutView(isPresented: $preferencesManager.showAbout)
             }
         }
     }

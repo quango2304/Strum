@@ -92,6 +92,7 @@ class PreferencesManager: ObservableObject {
     }
     
     @Published var showPreferences = false
+    @Published var showAbout = false
     
     private let userDefaults = UserDefaults.standard
     private let colorThemeKey = "StrumColorTheme"

@@ -32,6 +32,12 @@ struct StrumApp: App {
                 .keyboardShortcut("o", modifiers: [.command, .shift])
             }
 
+            CommandGroup(replacing: .appInfo) {
+                Button("About Strum") {
+                    preferencesManager.showAbout = true
+                }
+            }
+
             CommandGroup(after: .appInfo) {
                 Button("Preferences...") {
                     preferencesManager.showPreferences = true
