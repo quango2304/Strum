@@ -10,12 +10,18 @@ import SwiftUI
 @main
 struct StrumApp: App {
     @StateObject private var preferencesManager = PreferencesManager()
+    @StateObject private var playlistManager = PlaylistManager()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(preferencesManager)
+                .environmentObject(playlistManager)
                 .environment(\.colorTheme, preferencesManager.colorTheme)
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+                    // Save playlists immediately when app is about to terminate
+                    playlistManager.savePlaylistsImmediately()
+                }
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)

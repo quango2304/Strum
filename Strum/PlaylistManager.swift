@@ -22,11 +22,15 @@ class PlaylistManager: ObservableObject {
 
     // Callback for showing toast notifications
     var onImportSuccess: ((String) -> Void)?
-    
+
     private let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     private var playlistsURL: URL {
         documentsURL.appendingPathComponent("Strum_Playlists.json")
     }
+
+    // Debouncing for save operations to improve performance
+    private var saveWorkItem: DispatchWorkItem?
+    private let saveQueue = DispatchQueue(label: "playlist.save", qos: .utility)
     
     init() {
         loadPlaylists()
@@ -185,12 +189,34 @@ class PlaylistManager: ObservableObject {
     }
     
     func savePlaylists() {
+        // Cancel any pending save operation
+        saveWorkItem?.cancel()
+
+        // Create a new debounced save operation
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            self.performSave()
+        }
+
+        saveWorkItem = workItem
+
+        // Execute after a short delay to debounce rapid changes
+        saveQueue.asyncAfter(deadline: .now() + 0.1, execute: workItem)
+    }
+
+    private func performSave() {
         do {
             let data = try JSONEncoder().encode(playlists)
             try data.write(to: playlistsURL)
         } catch {
             print("Failed to save playlists: \(error)")
         }
+    }
+
+    // Force immediate save (useful for app termination)
+    func savePlaylistsImmediately() {
+        saveWorkItem?.cancel()
+        performSave()
     }
     
     private func loadPlaylists() {

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var playlistManager = PlaylistManager()
+    @EnvironmentObject private var playlistManager: PlaylistManager
     @StateObject private var musicPlayer = MusicPlayerManager()
     @EnvironmentObject private var preferencesManager: PreferencesManager
     @Environment(\.colorTheme) private var colorTheme

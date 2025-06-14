@@ -149,6 +149,11 @@ struct PlaylistSidebar: View {
                     .listRowSeparator(.hidden)
                 }
                 .listStyle(PlainListStyle())
+                .safeAreaInset(edge: .bottom) {
+                    // Add bottom padding to ensure last playlist is fully visible
+                    Color.clear.frame(height: DesignSystem.Spacing.lg)
+                }
+                .scrollContentBackground(.hidden)
             }
         }
         .background(
