@@ -6,6 +6,12 @@
 
 ---
 
+## 🎬 Demo
+
+https://github.com/quango2304/Strum/assets/demo_video.mp4
+
+---
+
 Strum is an elegant music player designed specifically for macOS, offering a seamless audio experience with beautiful theming, intuitive playlist management, and comprehensive format support. Built with SwiftUI and optimized for performance, Strum brings your music collection to life with style.
 
 ## ✨ Features
