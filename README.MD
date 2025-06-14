@@ -8,7 +8,7 @@
 
 ## 🎬 Demo
 
-https://github.com/quango2304/Strum/assets/demo_video.mp4
+https://github.com/quango2304/Strum/blob/main/example_images/demo_video.mp4
 
 ---
 
