@@ -120,12 +120,15 @@ class PlaylistManager: ObservableObject {
     /**
      * Creates a new playlist with the specified name.
      *
+     * The newly created playlist is automatically selected as the current playlist.
+     *
      * - Parameter name: The name for the new playlist
      * - Returns: The newly created playlist
      */
     func createPlaylist(name: String) -> Playlist {
         let newPlaylist = Playlist(name: name)
         playlists.append(newPlaylist)
+        selectedPlaylist = newPlaylist
         savePlaylists()
         return newPlaylist
     }

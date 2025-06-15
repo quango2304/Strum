@@ -185,7 +185,6 @@ struct ContentView: View {
                             }
 
                             let newPlaylist = playlistManager.createPlaylist(name: playlistNameForFiles.trimmingCharacters(in: .whitespacesAndNewlines))
-                            playlistManager.selectPlaylist(newPlaylist)
 
                             // Add all pending files to the new playlist
                             for fileUrl in pendingFiles {
@@ -528,7 +527,6 @@ struct ContentView: View {
         }
 
         let newPlaylist = playlistManager.createPlaylist(name: playlistNameForFiles.trimmingCharacters(in: .whitespacesAndNewlines))
-        playlistManager.selectPlaylist(newPlaylist)
 
         // Add all pending files to the new playlist
         for fileUrl in pendingFiles {

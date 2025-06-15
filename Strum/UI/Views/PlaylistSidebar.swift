@@ -290,7 +290,6 @@ struct PlaylistSidebar: View {
                 // Handle folder (create playlist automatically)
                 let folderName = url.lastPathComponent
                 let newPlaylist = playlistManager.createPlaylist(name: folderName)
-                playlistManager.selectPlaylist(newPlaylist)
                 playlistManager.importFolderAtURL(url)
             } else if fileExists {
                 // Check if it's an audio file
