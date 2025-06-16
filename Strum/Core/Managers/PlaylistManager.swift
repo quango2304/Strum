@@ -165,6 +165,21 @@ class PlaylistManager: ObservableObject {
     }
 
     /**
+     * Moves playlists from one position to another within the playlists array.
+     *
+     * This method enables drag-and-drop reordering functionality for playlists
+     * in the user interface, following Apple's standard behavior.
+     *
+     * - Parameters:
+     *   - source: The indices of playlists to move
+     *   - destination: The destination index for the moved playlists
+     */
+    func movePlaylist(from source: IndexSet, to destination: Int) {
+        playlists.move(fromOffsets: source, toOffset: destination)
+        savePlaylists()
+    }
+
+    /**
      * Selects a playlist as the currently active playlist.
      *
      * - Parameter playlist: The playlist to select

@@ -7,7 +7,6 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
-import AppKit
 
 struct PlaylistSidebar: View {
     @ObservedObject var playlistManager: PlaylistManager
@@ -23,8 +22,9 @@ struct PlaylistSidebar: View {
     @Binding var pendingFiles: [URL]
     @FocusState.Binding var isSearchFieldFocused: Bool
     let isCompact: Bool
-    @State private var isDragOver = false
     @State private var animationTrigger = false
+    @State private var draggedItem: String?
+    @State private var dropTargetIndex: Int?
     @Environment(\.colorTheme) private var colorTheme
 
     var body: some View {
@@ -140,27 +140,7 @@ struct PlaylistSidebar: View {
                     animationTrigger = true
                 }
             } else {
-                List(playlistManager.playlists, id: \.id) { playlist in
-                    PlaylistRow(
-                        playlist: playlist,
-                        isSelected: playlistManager.selectedPlaylist?.id == playlist.id,
-                        playlistManager: playlistManager,
-                        showingEditPlaylistPopup: $showingEditPlaylistPopup,
-                        editPlaylistName: $editPlaylistName,
-                        selectedPlaylistForEdit: $selectedPlaylistForEdit,
-                        showingImportPopup: $showingImportPopup,
-                        selectedPlaylistForImport: $selectedPlaylistForImport,
-                        isSearchFieldFocused: $isSearchFieldFocused
-                    )
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                }
-                .listStyle(PlainListStyle())
-                .safeAreaInset(edge: .bottom) {
-                    // Add bottom padding to ensure last playlist is fully visible
-                    Color.clear.frame(height: DesignSystem.Spacing.lg)
-                }
-                .scrollContentBackground(.hidden)
+                playlistListView
             }
         }
         .background(
@@ -183,65 +163,7 @@ struct PlaylistSidebar: View {
             minHeight: isCompact ? 150 : nil,
             maxHeight: isCompact ? 200 : .infinity
         )
-        .overlay(
-            // Beautiful blur drag overlay
-            Group {
-                if isDragOver {
-                    ZStack {
-                        // Radial blur background effect
-                        RadialGradient(
-                            gradient: Gradient(stops: [
-                                .init(color: Color.white.opacity(0.3), location: 0.0),
-                                .init(color: Color.white.opacity(0.15), location: 0.3),
-                                .init(color: Color.white.opacity(0.08), location: 0.6),
-                                .init(color: Color.white.opacity(0.03), location: 1.0)
-                            ]),
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: 200
-                        )
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 0))
 
-                        // Content with beautiful themed styling
-                        VStack(spacing: DesignSystem.Spacing.xl) {
-                            // Dynamic themed icon
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 72, weight: .medium))
-                                .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
-                                .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.4), radius: 12, x: 0, y: 6)
-                                .scaleEffect(isDragOver ? 1.1 : 1.0)
-                                .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: isDragOver)
-
-                            VStack(spacing: DesignSystem.Spacing.md) {
-                                Text("Drop Here")
-                                    .font(DesignSystem.Typography.title)
-                                    .fontWeight(.bold)
-                                    .foregroundStyle(
-                                        LinearGradient(
-                                            colors: colorTheme.gradientColors,
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-
-                                Text("Create new playlist with your content")
-                                    .font(DesignSystem.Typography.headline)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .opacity(0.9)
-                            }
-                        }
-                        .padding(40)
-                    }
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.8).combined(with: .opacity),
-                        removal: .scale(scale: 1.1).combined(with: .opacity)
-                    ))
-                }
-            }
-            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isDragOver)
-        )
         .background(
             ZStack {
                 // Base background
@@ -251,64 +173,91 @@ struct PlaylistSidebar: View {
                 DesignSystem.colors(for: colorTheme).sectionBackground
             }
         )
-        .onDrop(of: [.fileURL], isTargeted: $isDragOver) { providers in
-            return handleDrop(providers: providers)
-        }
     }
 
-    private func handleDrop(providers: [NSItemProvider]) -> Bool {
-        var hasValidProvider = false
+    @ViewBuilder
+    private var playlistListView: some View {
+        List {
+            ForEach(Array(playlistManager.playlists.enumerated()), id: \.element.id) { index, playlist in
+                VStack(spacing: 0) {
+                    // Drop zone above each item
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(height: 4)
+                        .overlay(
+                            Rectangle()
+                                .fill(Color.accentColor)
+                                .frame(height: dropTargetIndex == index ? 2 : 0)
+                                .padding(.horizontal, 8)
+                        )
+                        .onDrop(of: [.text], delegate: DropZoneDelegate(
+                            targetIndex: index,
+                            playlistManager: playlistManager,
+                            draggedItem: $draggedItem,
+                            dropTargetIndex: $dropTargetIndex
+                        ))
 
-        for provider in providers {
-            if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) {
-                hasValidProvider = true
-                provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { (item, error) in
-                    if let error = error {
-                        print("Error loading item: \(error)")
-                        return
-                    }
-
-                    if let data = item as? Data,
-                       let url = URL(dataRepresentation: data, relativeTo: nil) {
-                        DispatchQueue.main.async {
-                            self.handleFileOrFolderDrop(urls: [url])
+                    PlaylistRow(
+                        playlist: playlist,
+                        isSelected: playlistManager.selectedPlaylist?.id == playlist.id,
+                        playlistManager: playlistManager,
+                        showingEditPlaylistPopup: $showingEditPlaylistPopup,
+                        editPlaylistName: $editPlaylistName,
+                        selectedPlaylistForEdit: $selectedPlaylistForEdit,
+                        showingImportPopup: $showingImportPopup,
+                        selectedPlaylistForImport: $selectedPlaylistForImport,
+                        isSearchFieldFocused: $isSearchFieldFocused
+                    )
+                    .onDrag {
+                        draggedItem = "\(index)"
+                        if let playlistIndex = playlistManager.playlists.firstIndex(where: { $0.id == playlist.id }) {
+                            return NSItemProvider(object: "\(playlistIndex)" as NSString)
                         }
+                        return NSItemProvider()
+                    }
+                    .onDrop(of: [.text], delegate: PlaylistDropDelegate(
+                        playlist: playlist,
+                        playlistManager: playlistManager,
+                        draggedItem: $draggedItem,
+                        dropTargetIndex: $dropTargetIndex
+                    ))
+
+                    // Drop zone below the last item
+                    if index == playlistManager.playlists.count - 1 {
+                        Rectangle()
+                            .fill(Color.clear)
+                            .frame(height: 4)
+                            .overlay(
+                                Rectangle()
+                                    .fill(Color.accentColor)
+                                    .frame(height: dropTargetIndex == playlistManager.playlists.count ? 2 : 0)
+                                    .padding(.horizontal, 8)
+                            )
+                            .onDrop(of: [.text], delegate: DropZoneDelegate(
+                                targetIndex: playlistManager.playlists.count,
+                                playlistManager: playlistManager,
+                                draggedItem: $draggedItem,
+                                dropTargetIndex: $dropTargetIndex
+                            ))
                     }
                 }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .deleteDisabled(false)
             }
         }
+        .listStyle(PlainListStyle())
+        .environment(\.defaultMinListRowHeight, 0)
 
-        return hasValidProvider
+        .safeAreaInset(edge: .bottom) {
+            // Add bottom padding to ensure last playlist is fully visible
+            Color.clear.frame(height: DesignSystem.Spacing.lg)
+        }
+        .scrollContentBackground(.hidden)
     }
 
-    private func handleFileOrFolderDrop(urls: [URL]) {
-        for url in urls {
-            var isDirectory: ObjCBool = false
-            let fileExists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory)
-
-            if fileExists && isDirectory.boolValue {
-                // Handle folder (create playlist automatically)
-                let folderName = url.lastPathComponent
-                let newPlaylist = playlistManager.createPlaylist(name: folderName)
-                playlistManager.importFolderAtURL(url)
-            } else if fileExists {
-                // Check if it's an audio file
-                let audioExtensions = ["mp3", "m4a", "wav", "flac", "aac", "ogg", "wma"]
-                let fileExtension = url.pathExtension.lowercased()
-                if audioExtensions.contains(fileExtension) {
-                    // Add to pending files for popup
-                    if !pendingFiles.contains(url) {
-                        pendingFiles.append(url)
-                    }
-
-                    // Show popup if not already showing
-                    if !showingPlaylistNamePopup {
-                        playlistNameForFiles = ""
-                        showingPlaylistNamePopup = true
-                    }
-                }
-            }
-        }
+    private func handlePlaylistMove(source: IndexSet, destination: Int) {
+        playlistManager.movePlaylist(from: source, to: destination)
     }
 }
 
@@ -322,14 +271,15 @@ struct PlaylistRow: View {
     @Binding var showingImportPopup: Bool
     @Binding var selectedPlaylistForImport: Playlist?
     @FocusState.Binding var isSearchFieldFocused: Bool
+
     @State private var isHovered = false
     @Environment(\.colorTheme) private var colorTheme
 
     var body: some View {
-        HStack {
+        HStack(spacing: DesignSystem.Spacing.sm) {
             Image(systemName: "music.note.list")
-                .foregroundColor(isSelected ? colorTheme.primaryColor : .secondary)
-                .frame(width: 16, height: 16)
+                            .foregroundColor(isSelected ? colorTheme.primaryColor : .secondary)
+                            .frame(width: 16, height: 16)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(playlist.name)
@@ -344,47 +294,26 @@ struct PlaylistRow: View {
 
             Spacer()
 
+            // Action buttons on hover
             if isHovered {
-                HStack(spacing: 6) {
-                    // Add content button
-                    Button(action: {
-                        isSearchFieldFocused = false
-                        selectedPlaylistForImport = playlist
-                        showingImportPopup = true
-                    }) {
-                        Image(systemName: "plus.circle.fill")
-                    }
-                    .buttonStyle(ActionIconButtonStyle(size: 20, actionType: .add))
-                    .help("Add Music")
-
-                    // Edit button
-                    Button(action: {
-                        isSearchFieldFocused = false
-                        selectedPlaylistForEdit = playlist
-                        editPlaylistName = playlist.name
-                        showingEditPlaylistPopup = true
-                    }) {
-                        Image(systemName: "pencil")
-                    }
-                    .buttonStyle(ActionIconButtonStyle(size: 20, actionType: .edit))
-                    .help("Edit Playlist")
-
-                    // Delete button
-                    Button(action: {
-                        isSearchFieldFocused = false
-                        playlistManager.deletePlaylist(playlist)
-                    }) {
-                        Image(systemName: "trash")
-                    }
-                    .buttonStyle(ActionIconButtonStyle(size: 20, actionType: .delete))
-                    .help("Delete Playlist")
-                }
-                .frame(maxWidth: .infinity, alignment: .trailing)
+                PlaylistActionButtons(
+                    playlist: playlist,
+                    playlistManager: playlistManager,
+                    showingEditPlaylistPopup: $showingEditPlaylistPopup,
+                    editPlaylistName: $editPlaylistName,
+                    selectedPlaylistForEdit: $selectedPlaylistForEdit,
+                    showingImportPopup: $showingImportPopup,
+                    selectedPlaylistForImport: $selectedPlaylistForImport,
+                    isSearchFieldFocused: $isSearchFieldFocused
+                )
             }
         }
         .padding(.horizontal, DesignSystem.Spacing.sm)
         .padding(.vertical, DesignSystem.Spacing.xs)
         .contentShape(Rectangle())
+        .background(
+            PlaylistRowBackground(isSelected: isSelected, isHovered: isHovered, colorTheme: colorTheme)
+        )
         .onHover { hovering in
             isHovered = hovering
         }
@@ -392,44 +321,224 @@ struct PlaylistRow: View {
             isSearchFieldFocused = false
             playlistManager.selectPlaylist(playlist)
         }
-        .background(
-            Group {
-                if isSelected {
-                    // Subtle selection background
-                    ZStack {
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
-                            .fill(.ultraThinMaterial)
-                            .opacity(0.6)
-
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
-                            .fill(colorTheme.primaryColor)
-                            .opacity(0.25)
-                    }
-                } else if isHovered {
-                    // Subtle hover state
-                    ZStack {
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
-                            .fill(.ultraThinMaterial)
-                            .opacity(0.4)
-
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
-                            .fill(Color.primary)
-                            .opacity(0.1)
-                    }
-                } else {
-                    // Transparent
-                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
-                        .fill(Color.clear)
-                }
+        .contextMenu {
+            Button("Add Music") {
+                isSearchFieldFocused = false
+                selectedPlaylistForImport = playlist
+                showingImportPopup = true
             }
-            .animation(.easeInOut(duration: 0.15), value: isHovered)
-            .animation(.easeInOut(duration: 0.15), value: isSelected)
-        )
 
+            Button("Edit Playlist") {
+                isSearchFieldFocused = false
+                selectedPlaylistForEdit = playlist
+                editPlaylistName = playlist.name
+                showingEditPlaylistPopup = true
+            }
+
+            Divider()
+
+            Button("Delete Playlist", role: .destructive) {
+                isSearchFieldFocused = false
+                playlistManager.deletePlaylist(playlist)
+            }
+        }
     }
 }
 
+struct PlaylistDropDelegate: DropDelegate {
+    let playlist: Playlist
+    let playlistManager: PlaylistManager
+    @Binding var draggedItem: String?
+    @Binding var dropTargetIndex: Int?
 
+    func performDrop(info: DropInfo) -> Bool {
+        defer {
+            draggedItem = nil
+            dropTargetIndex = nil
+        }
+
+        guard let item = info.itemProviders(for: [.text]).first else { return false }
+
+        item.loadItem(forTypeIdentifier: "public.text", options: nil) { (data, error) in
+            guard let data = data as? Data,
+                  let sourceIndexString = String(data: data, encoding: .utf8),
+                  let sourceIndex = Int(sourceIndexString) else { return }
+
+            DispatchQueue.main.async {
+                guard let destinationIndex = self.playlistManager.playlists.firstIndex(where: { $0.id == self.playlist.id }) else { return }
+
+                if sourceIndex != destinationIndex {
+                    self.playlistManager.movePlaylist(from: IndexSet([sourceIndex]), to: destinationIndex > sourceIndex ? destinationIndex + 1 : destinationIndex)
+                }
+            }
+        }
+
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let destinationIndex = playlistManager.playlists.firstIndex(where: { $0.id == playlist.id }) else { return }
+
+        // Determine if we should show indicator above or below based on drop location
+        let dropLocation = info.location
+        let itemHeight: CGFloat = 50 // Approximate height of playlist row
+        let shouldDropBelow = dropLocation.y > itemHeight / 2
+
+        dropTargetIndex = shouldDropBelow ? destinationIndex + 1 : destinationIndex
+    }
+
+    func dropExited(info: DropInfo) {
+        dropTargetIndex = nil
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        // Update drop position based on cursor location
+        guard let destinationIndex = playlistManager.playlists.firstIndex(where: { $0.id == playlist.id }) else {
+            return DropProposal(operation: .move)
+        }
+
+        let dropLocation = info.location
+        let itemHeight: CGFloat = 50
+        let shouldDropBelow = dropLocation.y > itemHeight / 2
+
+        dropTargetIndex = shouldDropBelow ? destinationIndex + 1 : destinationIndex
+
+        return DropProposal(operation: .move)
+    }
+}
+
+struct DropZoneDelegate: DropDelegate {
+    let targetIndex: Int
+    let playlistManager: PlaylistManager
+    @Binding var draggedItem: String?
+    @Binding var dropTargetIndex: Int?
+
+    func performDrop(info: DropInfo) -> Bool {
+        defer {
+            draggedItem = nil
+            dropTargetIndex = nil
+        }
+
+        guard let item = info.itemProviders(for: [.text]).first else { return false }
+
+        item.loadItem(forTypeIdentifier: "public.text", options: nil) { (data, error) in
+            guard let data = data as? Data,
+                  let sourceIndexString = String(data: data, encoding: .utf8),
+                  let sourceIndex = Int(sourceIndexString) else { return }
+
+            DispatchQueue.main.async {
+                if sourceIndex != self.targetIndex {
+                    self.playlistManager.movePlaylist(from: IndexSet([sourceIndex]), to: self.targetIndex > sourceIndex ? self.targetIndex : self.targetIndex)
+                }
+            }
+        }
+
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        dropTargetIndex = targetIndex
+    }
+
+    func dropExited(info: DropInfo) {
+        dropTargetIndex = nil
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        dropTargetIndex = targetIndex
+        return DropProposal(operation: .move)
+    }
+}
+
+// MARK: - Reusable Components
+
+struct PlaylistActionButtons: View {
+    let playlist: Playlist
+    let playlistManager: PlaylistManager
+    @Binding var showingEditPlaylistPopup: Bool
+    @Binding var editPlaylistName: String
+    @Binding var selectedPlaylistForEdit: Playlist?
+    @Binding var showingImportPopup: Bool
+    @Binding var selectedPlaylistForImport: Playlist?
+    @FocusState.Binding var isSearchFieldFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            // Add content button
+            Button(action: {
+                isSearchFieldFocused = false
+                selectedPlaylistForImport = playlist
+                showingImportPopup = true
+            }) {
+                Image(systemName: "plus.circle.fill")
+            }
+            .buttonStyle(ActionIconButtonStyle(size: 20, actionType: .add))
+            .help("Add Music")
+
+            // Edit button
+            Button(action: {
+                isSearchFieldFocused = false
+                selectedPlaylistForEdit = playlist
+                editPlaylistName = playlist.name
+                showingEditPlaylistPopup = true
+            }) {
+                Image(systemName: "pencil")
+            }
+            .buttonStyle(ActionIconButtonStyle(size: 20, actionType: .edit))
+            .help("Edit Playlist")
+
+            // Delete button
+            Button(action: {
+                isSearchFieldFocused = false
+                playlistManager.deletePlaylist(playlist)
+            }) {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(ActionIconButtonStyle(size: 20, actionType: .delete))
+            .help("Delete Playlist")
+        }
+    }
+}
+
+struct PlaylistRowBackground: View {
+    let isSelected: Bool
+    let isHovered: Bool
+    let colorTheme: ColorTheme
+
+    var body: some View {
+        Group {
+            if isSelected {
+                // Selection background
+                ZStack {
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.6)
+
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
+                        .fill(colorTheme.primaryColor)
+                        .opacity(0.25)
+                }
+            } else if isHovered {
+                // Hover background
+                ZStack {
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.4)
+
+                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
+                        .fill(Color.primary)
+                        .opacity(0.1)
+                }
+            } else {
+                // Transparent
+                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.lg)
+                    .fill(Color.clear)
+            }
+        }
+        .animation(.easeInOut(duration: 0.15), value: isHovered)
+        .animation(.easeInOut(duration: 0.15), value: isSelected)
+    }
+}
 
 #Preview {
     struct PreviewWrapper: View {
