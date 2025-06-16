@@ -8,8 +8,16 @@
 import SwiftUI
 import AppKit
 
+// MARK: - App Delegate
+class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return true
+    }
+}
+
 @main
 struct StrumApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var preferencesManager = PreferencesManager()
     @StateObject private var playlistManager = PlaylistManager()
 
