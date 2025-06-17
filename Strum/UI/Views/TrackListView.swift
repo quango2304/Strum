@@ -294,18 +294,26 @@ struct TrackListView: View {
 
     @ViewBuilder
     private func trackListView(isCompact: Bool) -> some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(filteredTracks, id: \.id) { track in
-                    trackRowView(track: track, isCompact: isCompact)
-                        .id(track.id)
-                }
-
-                // Add padding at the bottom to ensure last track is fully visible
-                Color.clear
-                    .frame(height: DesignSystem.Spacing.xl)
+        List {
+            ForEach(filteredTracks, id: \.id) { track in
+                trackRowView(track: track, isCompact: isCompact)
+                    .id(track.id)
+                    .listRowBackground(Color.clear) // Keep transparent row background
+                    .listRowSeparator(.hidden) // Hide the dividers
+                    .listRowInsets(EdgeInsets()) // Remove default List padding
             }
+            .onDelete(perform: handleDelete)
+
+            // Add padding at the bottom to ensure last track is fully visible
+            Color.clear
+                .frame(height: DesignSystem.Spacing.xl)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets())
         }
+        .listStyle(.plain) // Use plain list style to remove default styling
+        .scrollContentBackground(.hidden) // Hide the default List background
+        .background(Color.clear) // Keep the background transparent so parent background shows through
         .contentShape(Rectangle())
         .onTapGesture {
             isSearchFieldFocused = false
