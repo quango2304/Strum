@@ -509,8 +509,7 @@ struct RotatingCDArt: View {
     let isPlaying: Bool
     let size: CGFloat
 
-    @State private var rotationAngle: Double = 0
-    @State private var rotationTimer: Timer?
+    @State private var isRotating: Bool = false
 
     // Create a unique identifier for the artwork to prevent animation between different images
     private var artworkID: String {
@@ -581,57 +580,32 @@ struct RotatingCDArt: View {
                 )
                 .frame(width: size * 0.9, height: size * 0.9)
         }
-        .rotationEffect(.degrees(rotationAngle))
+        .rotationEffect(.degrees(isRotating ? 360 : 0))
+        .animation(
+            isRotating ?
+            .linear(duration: 8.0).repeatForever(autoreverses: false) :
+            .linear(duration: 0.5),
+            value: isRotating
+        )
         .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
         .onAppear {
-            if isPlaying {
-                startRotation()
-            }
+            isRotating = isPlaying
         }
         .onChange(of: isPlaying) { _, newValue in
-            if newValue {
-                startRotation()
-            } else {
-                stopRotation()
-            }
+            isRotating = newValue
         }
         .onChange(of: artworkID) { _, _ in
             // Reset rotation when artwork changes to prevent animation between different images
-            stopRotation()
-            rotationAngle = 0
-            if isPlaying {
-                startRotation()
-            }
-        }
-        .onDisappear {
-            stopRotation()
-        }
-    }
-
-    private func startRotation() {
-        // Stop any existing timer first
-        stopRotation()
-
-        // Create a timer that updates rotation angle smoothly
-        // 8 seconds per full rotation = 360 degrees / 8 seconds = 45 degrees per second
-        // Update every 16ms (60 FPS) = 45 * (16/1000) = 0.72 degrees per frame
-        let degreesPerFrame = 45.0 * (16.0 / 1000.0) // 0.72 degrees per 16ms
-
-        rotationTimer = Timer.scheduledTimer(withTimeInterval: 0.016, repeats: true) { _ in
-            withAnimation(.linear(duration: 0.016)) {
-                rotationAngle += degreesPerFrame
-                // Keep angle in reasonable range to prevent overflow
-                if rotationAngle >= 360 {
-                    rotationAngle -= 360
-                }
+            let wasRotating = isRotating
+            isRotating = false
+            // Small delay to ensure the animation stops before restarting
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isRotating = wasRotating && isPlaying
             }
         }
     }
 
-    private func stopRotation() {
-        rotationTimer?.invalidate()
-        rotationTimer = nil
-    }
+
 }
 
 // MARK: - Animated Play/Pause Icon Component

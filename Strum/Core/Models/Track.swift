@@ -318,6 +318,12 @@ struct Track: Identifiable, Codable, Hashable {
     private static var artworkCache: [URL: NSImage] = [:]
     private static let cacheQueue = DispatchQueue(label: "artwork.cache", qos: .userInitiated, attributes: .concurrent)
 
+    /// Maximum number of cached artwork images to prevent memory growth
+    private static let maxCacheSize = 100
+
+    /// Memory pressure source for automatic cache cleanup
+    private static var memoryPressureSource: DispatchSourceMemoryPressure?
+
     /**
      * Gets the NSImage representation of the track's artwork with thread-safe caching.
      *
@@ -325,6 +331,7 @@ struct Track: Identifiable, Codable, Hashable {
      * - Caching NSImage instances to avoid repeated creation
      * - Using concurrent queues for thread-safe access
      * - Automatically handling data-to-image conversion
+     * - Managing cache size to prevent memory growth
      *
      * - Returns: The artwork as NSImage, or nil if no artwork is available
      */
@@ -343,6 +350,16 @@ struct Track: Identifiable, Codable, Hashable {
             // Create new image and cache it
             if let image = NSImage(data: artworkData) {
                 Self.cacheQueue.async(flags: .barrier) {
+                    // Check cache size and clean up if needed
+                    if Self.artworkCache.count >= Self.maxCacheSize {
+                        // Remove oldest entries (simple FIFO approach)
+                        let keysToRemove = Array(Self.artworkCache.keys.prefix(Self.maxCacheSize / 2))
+                        for key in keysToRemove {
+                            Self.artworkCache.removeValue(forKey: key)
+                        }
+                        print("🎵 Artwork cache cleaned up, removed \(keysToRemove.count) entries")
+                    }
+
                     Self.artworkCache[url] = image
                 }
                 print("🎵 Created and cached NSImage for \(title): SUCCESS from \(artworkData.count) bytes")
@@ -362,8 +379,26 @@ struct Track: Identifiable, Codable, Hashable {
      */
     static func clearArtworkCache() {
         cacheQueue.async(flags: .barrier) {
+            let removedCount = artworkCache.count
             artworkCache.removeAll()
+            print("🎵 Artwork cache cleared, removed \(removedCount) entries")
         }
+    }
+
+    /**
+     * Sets up memory pressure monitoring to automatically clear cache when needed.
+     * This should be called once during app initialization.
+     */
+    static func setupMemoryPressureMonitoring() {
+        guard memoryPressureSource == nil else { return } // Prevent multiple setups
+
+        let source = DispatchSource.makeMemoryPressureSource(eventMask: .warning, queue: .global(qos: .utility))
+        source.setEventHandler {
+            print("🎵 Memory pressure detected, clearing artwork cache")
+            clearArtworkCache()
+        }
+        source.resume()
+        memoryPressureSource = source // Retain the source
     }
 
     // MARK: - Quality Information

@@ -21,6 +21,11 @@ struct StrumApp: App {
     @StateObject private var preferencesManager = PreferencesManager()
     @StateObject private var playlistManager = PlaylistManager()
 
+    init() {
+        // Setup memory pressure monitoring for artwork cache
+        Track.setupMemoryPressureMonitoring()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -30,6 +35,12 @@ struct StrumApp: App {
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
                     // Save playlists immediately when app is about to terminate
                     playlistManager.savePlaylistsImmediately()
+                    // Clear artwork cache on termination
+                    Track.clearArtworkCache()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+                    // Clear artwork cache when app becomes inactive to free memory
+                    Track.clearArtworkCache()
                 }
         }
         .windowStyle(.titleBar)

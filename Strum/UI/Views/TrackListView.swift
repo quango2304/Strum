@@ -208,13 +208,13 @@ struct TrackListView: View {
         VStack(spacing: DesignSystem.Spacing.xl) {
             Spacer()
 
-            // Animated music icon with theme-aware gradient
+            // Animated music icon with theme-aware gradient - optimized animation
             Image(systemName: "music.note")
                 .font(.system(size: 64, weight: .light))
                 .foregroundStyle(DesignSystem.colors(for: colorTheme).gradient)
                 .shadow(color: DesignSystem.colors(for: colorTheme).primary.opacity(0.3), radius: 8, x: 0, y: 4)
                 .scaleEffect(animationTrigger ? 1.05 : 1.0)
-                .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: animationTrigger)
+                .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: animationTrigger)
 
             VStack(spacing: DesignSystem.Spacing.md) {
                 Text("No Songs in \"\(playlist.name)\"")

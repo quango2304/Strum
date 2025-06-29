@@ -554,6 +554,16 @@ class PlaylistManager: ObservableObject {
     }
 
     /**
+     * Cleanup method called when the playlist manager is deallocated.
+     *
+     * Ensures proper cleanup of pending save operations.
+     */
+    deinit {
+        saveWorkItem?.cancel()
+        saveWorkItem = nil
+    }
+
+    /**
      * Loads playlists from persistent storage.
      *
      * Attempts to read and decode playlist data from the storage file.

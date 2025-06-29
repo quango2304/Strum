@@ -58,6 +58,9 @@ class MusicPlayerManager: ObservableObject {
     
     /// Timer for updating playback progress
     private var timer: Timer?
+
+    /// Tracks the last time we updated Now Playing info to ensure 1-second intervals
+    private var lastNowPlayingUpdate: TimeInterval = 0
     
     /// Array of shuffled track indices for shuffle mode
     private var shuffledIndices: [Int] = []
@@ -82,19 +85,22 @@ class MusicPlayerManager: ObservableObject {
     
     /**
      * Plays a specific track from a playlist.
-     * 
+     *
      * This method:
      * - Sets the current track and playlist
      * - Updates shuffle indices if needed
      * - Handles security-scoped resource access
      * - Initializes and starts the audio player
      * - Updates Now Playing information
-     * 
+     *
      * - Parameters:
      *   - track: The track to play
      *   - playlist: The playlist containing the track
      */
     func play(track: Track, in playlist: Playlist) {
+        // Stop current playback and clean up resources first
+        stop()
+
         currentTrack = track
         currentPlaylist = playlist
 
@@ -189,15 +195,22 @@ class MusicPlayerManager: ObservableObject {
     
     /**
      * Stops playback completely.
-     * 
+     *
      * Clears the current track, resets playback position, and clears Now Playing info.
      */
     func stop() {
+        // Stop timer first to prevent any callbacks
+        stopTimer()
+
+        // Stop and clean up audio player
         audioPlayer?.stop()
         audioPlayer = nil
+
+        // Reset state
         playerState = .stopped
         currentTime = 0
-        stopTimer()
+
+        // Clear Now Playing info
         clearNowPlayingInfo()
     }
     
@@ -374,17 +387,34 @@ class MusicPlayerManager: ObservableObject {
     /**
      * Starts the playback progress timer.
      *
-     * The timer updates every 0.1 seconds to provide smooth progress updates
-     * and checks for track completion to automatically advance to the next track.
+     * The timer frequency is dynamically adjusted based on track duration:
+     * - Shorter tracks get more frequent updates for smoother progress
+     * - Longer tracks get less frequent updates to save CPU
+     * - Minimum 100 updates per track, maximum every 0.1 seconds
      */
     private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+        // Always stop existing timer first to prevent multiple timers
+        stopTimer()
+
+        // Calculate optimal update interval based on track duration
+        let trackDuration = currentTrack?.duration ?? 180 // Default to 3 minutes if unknown
+        let targetUpdatesPerTrack = 100.0 // Aim for 100 updates across the entire track
+        let calculatedInterval = trackDuration / targetUpdatesPerTrack
+
+        // Clamp between 0.1 and 1.0 seconds for reasonable performance
+        let updateInterval = max(0.1, min(1.0, calculatedInterval))
+
+        timer = Timer.scheduledTimer(withTimeInterval: updateInterval, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+
             if let player = self.audioPlayer {
                 self.currentTime = player.currentTime
 
-                // Update Now Playing info every second (10 timer ticks)
-                if Int(self.currentTime * 10) % 10 == 0 {
+                // Update Now Playing info every second (regardless of timer frequency)
+                let timeSinceLastUpdate = self.currentTime - self.lastNowPlayingUpdate
+                if timeSinceLastUpdate >= 1.0 {
                     self.updateNowPlayingInfo()
+                    self.lastNowPlayingUpdate = self.currentTime
                 }
 
                 // Check if track finished
@@ -553,9 +583,15 @@ class MusicPlayerManager: ObservableObject {
     /**
      * Cleanup method called when the music player is deallocated.
      *
-     * Ensures proper cleanup of Now Playing information and notification observers.
+     * Ensures proper cleanup of Now Playing information, timers, audio player, and notification observers.
      */
     deinit {
+        // Stop timer and audio player
+        stopTimer()
+        audioPlayer?.stop()
+        audioPlayer = nil
+
+        // Clear Now Playing info and remove observers
         clearNowPlayingInfo()
         NotificationCenter.default.removeObserver(self)
     }
