@@ -96,6 +96,33 @@ struct AboutView: View {
                             .onHover { isHovered in
                                 NSCursor.pointingHand.set()
                             }
+
+                            // GitHub Link
+                            HStack(spacing: DesignSystem.Spacing.xs) {
+                                Image(systemName: "link.circle.fill")
+                                    .foregroundColor(colorTheme.primaryColor)
+                                    .font(.system(size: 14))
+
+                                Text("Source code & contributions:")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.top, DesignSystem.Spacing.xs)
+
+                            Button(action: {
+                                if let url = URL(string: "https://github.com/quango2304/Strum") {
+                                    NSWorkspace.shared.open(url)
+                                }
+                            }) {
+                                Text("GitHub Repository")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(colorTheme.primaryColor)
+                                    .underline()
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .onHover { isHovered in
+                                NSCursor.pointingHand.set()
+                            }
                         }
                     }
                 }
