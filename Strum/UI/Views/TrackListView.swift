@@ -66,6 +66,13 @@ struct TrackListView: View {
             .onDrop(of: [.fileURL], isTargeted: $isDragOver) { providers in
                 return handleDrop(providers: providers)
             }
+            .onAppear {
+                // Set up callback to clear search when switching playlists
+                playlistManager.onPlaylistSwitch = {
+                    searchText = ""
+                    isSearchFieldFocused = false
+                }
+            }
         }
     }
 

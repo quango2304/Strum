@@ -179,6 +179,9 @@ class PlaylistManager: ObservableObject {
         savePlaylists()
     }
 
+    /// Callback to clear search state when switching playlists
+    var onPlaylistSwitch: (() -> Void)?
+
     /**
      * Selects a playlist as the currently active playlist.
      *
@@ -186,6 +189,8 @@ class PlaylistManager: ObservableObject {
      */
     func selectPlaylist(_ playlist: Playlist) {
         selectedPlaylist = playlist
+        // Clear search state when switching playlists
+        onPlaylistSwitch?()
     }
 
     // MARK: - File Import Operations
