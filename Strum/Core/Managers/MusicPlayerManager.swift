@@ -101,7 +101,16 @@ class MusicPlayerManager: ObservableObject {
         // Stop current playback and clean up resources first
         stop()
 
-        currentTrack = track
+        // Load artwork for the track before setting as current
+        var trackWithArtwork = track
+        trackWithArtwork.loadArtwork()
+
+        // Update the track in the playlist with the loaded artwork
+        if let trackIndex = playlist.tracks.firstIndex(where: { $0.id == track.id }) {
+            playlist.tracks[trackIndex] = trackWithArtwork
+        }
+
+        currentTrack = trackWithArtwork
         currentPlaylist = playlist
 
         // Update shuffle indices if needed

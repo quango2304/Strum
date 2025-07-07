@@ -50,8 +50,8 @@ struct Track: Identifiable, Codable, Hashable {
     /// Track number within album (optional)
     let trackNumber: Int?
     
-    /// Embedded artwork data (JPEG/PNG format)
-    let artworkData: Data?
+    /// Embedded artwork data (JPEG/PNG format) - loaded only when track is played
+    var artworkData: Data?
     
     /// Security-scoped bookmark for persistent file access
     let bookmarkData: Data?
@@ -94,48 +94,20 @@ struct Track: Identifiable, Codable, Hashable {
 
         // Extract metadata from the audio file
         let fileExtension = url.pathExtension.uppercased()
-        print("🎵 Processing file: \(url.lastPathComponent) (.\(fileExtension))")
 
-        // Initialize metadata variables
+        // Initialize metadata variables (artwork loading removed for performance)
         var extractedTitle: String?
         var extractedArtist: String?
         var extractedAlbum: String?
         var extractedTrackNumber: Int?
-        var extractedArtworkData: Data?
 
-        // Try FLACMetadataKit first for FLAC files (better artwork extraction)
-        if fileExtension == "FLAC" {
-            print("🎵 Using FLACMetadataKit for FLAC artwork extraction")
-            do {
-                let flacData = try Data(contentsOf: url)
-                let parser = FLACParser(data: flacData)
-                let metadata = try parser.parse()
-                print("🎵 FLACMetadataKit successfully parsed file")
-
-                // Extract artwork using FLACMetadataKit
-                if let picture = metadata.picture {
-                    extractedArtworkData = picture.data
-                    print("🎵 ✅ FLACMetadataKit extracted artwork: \(picture.data.count) bytes, MIME: \(picture.mimeType)")
-                } else {
-                    print("🎵 ❌ FLACMetadataKit found no picture in FLAC file")
-                }
-
-            } catch {
-                print("🎵 ❌ FLACMetadataKit failed: \(error), falling back to AVFoundation")
-            }
-        }
-
-        // Use AVFoundation for missing metadata or non-FLAC files
+        // Use AVFoundation for metadata extraction (artwork loading deferred)
         let asset = AVURLAsset(url: url)
-        if extractedArtworkData == nil || extractedTitle == nil || extractedArtist == nil || extractedAlbum == nil {
-            print("🎵 Using AVFoundation for missing metadata or artwork")
+        if extractedTitle == nil || extractedArtist == nil || extractedAlbum == nil {
             let allMetadata = asset.metadata
-            print("🎵 Found \(allMetadata.count) total metadata items via AVFoundation")
 
-            // Extract from all available metadata
+            // Extract from all available metadata (excluding artwork for performance)
             for item in allMetadata {
-                print("🎵 Checking item with identifier: \(item.identifier?.rawValue ?? "unknown")")
-                print("🎵 Common key: \(item.commonKey?.rawValue ?? "none")")
 
                 // Try common key first
                 if let key = item.commonKey {
@@ -156,10 +128,8 @@ struct Track: Identifiable, Codable, Hashable {
                             print("🎵 Found album: \(extractedAlbum ?? "nil")")
                         }
                     case .commonKeyArtwork:
-                        if extractedArtworkData == nil {
-                            extractedArtworkData = item.dataValue
-                            print("🎵 Found artwork data: \(extractedArtworkData?.count ?? 0) bytes")
-                        }
+                        // Skip artwork extraction for performance - will be loaded lazily when needed
+                        break
                     default:
                         break
                     }
@@ -196,37 +166,8 @@ struct Track: Identifiable, Codable, Hashable {
                 }
             }
 
-            // Special handling for artwork in FLAC files via video tracks
-            // FLAC artwork is often stored as attached pictures (video streams)
-            if extractedArtworkData == nil {
-                let tracks = asset.tracks
-                for track in tracks {
-                    if track.mediaType == .video {
-                        print("🎵 Found video track (likely artwork), attempting to extract...")
-
-                        // Use AVAssetImageGenerator to extract the artwork
-                        let imageGenerator = AVAssetImageGenerator(asset: asset)
-                        imageGenerator.appliesPreferredTrackTransform = true
-                        imageGenerator.maximumSize = CGSize(width: 500, height: 500) // Reasonable size limit
-
-                        do {
-                            let cgImage = try imageGenerator.copyCGImage(at: CMTime.zero, actualTime: nil)
-                            let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-
-                            // Convert NSImage to Data
-                            if let tiffData = nsImage.tiffRepresentation,
-                               let bitmapRep = NSBitmapImageRep(data: tiffData),
-                               let jpegData = bitmapRep.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) {
-                                extractedArtworkData = jpegData
-                                print("🎵 ✅ Successfully extracted artwork via AVFoundation: \(jpegData.count) bytes")
-                            }
-                        } catch {
-                            print("🎵 ❌ Failed to extract artwork via AVFoundation: \(error)")
-                        }
-                        break
-                    }
-                }
-            }
+            // Note: Artwork extraction moved to lazy loading for better performance
+            // This significantly speeds up playlist loading for large libraries
         }
 
         // Parse filename if metadata is not available
@@ -256,12 +197,12 @@ struct Track: Identifiable, Codable, Hashable {
         }
         self.bitrate = extractedBitrate
 
-        // Set final values
+        // Set final values (artwork will be loaded when track is played)
         self.title = extractedTitle ?? filename
         self.artist = extractedArtist
         self.album = extractedAlbum
         self.trackNumber = extractedTrackNumber
-        self.artworkData = extractedArtworkData
+        self.artworkData = nil // Will be loaded when track is played
 
         // Get duration
         let duration = asset.duration
@@ -325,9 +266,99 @@ struct Track: Identifiable, Codable, Hashable {
     private static var memoryPressureSource: DispatchSourceMemoryPressure?
 
     /**
+     * Loads artwork data for the current track when it starts playing.
+     *
+     * This method performs artwork extraction only when needed, significantly
+     * improving playlist loading performance by avoiding artwork extraction
+     * for tracks that may never be played.
+     */
+    mutating func loadArtwork() {
+        // Start accessing security-scoped resource
+        guard startAccessingSecurityScopedResource() else {
+            return
+        }
+        defer { stopAccessingSecurityScopedResource() }
+
+        guard let resolvedURL = resolveURL() else {
+            return
+        }
+
+        let fileExtension = resolvedURL.pathExtension.uppercased()
+        var extractedArtworkData: Data?
+
+        // Try FLACMetadataKit first for FLAC files (better artwork extraction)
+        if fileExtension == "FLAC" {
+            do {
+                let flacData = try Data(contentsOf: resolvedURL)
+                let parser = FLACParser(data: flacData)
+                let metadata = try parser.parse()
+
+                // Extract artwork using FLACMetadataKit
+                if let picture = metadata.picture {
+                    extractedArtworkData = picture.data
+                }
+            } catch {
+                // Fall back to AVFoundation if FLACMetadataKit fails
+            }
+        }
+
+        // Use AVFoundation for missing artwork or non-FLAC files
+        if extractedArtworkData == nil {
+            let asset = AVURLAsset(url: resolvedURL)
+            let allMetadata = asset.metadata
+
+            // Extract artwork from metadata
+            for item in allMetadata {
+                if let key = item.commonKey, key == .commonKeyArtwork {
+                    extractedArtworkData = item.dataValue
+                    print("🎵 ✅ AVFoundation extracted artwork: \(extractedArtworkData?.count ?? 0) bytes")
+                    break
+                }
+            }
+
+            // Special handling for artwork in FLAC files via video tracks
+            if extractedArtworkData == nil {
+                let tracks = asset.tracks
+                for track in tracks {
+                    if track.mediaType == .video {
+                        print("🎵 Found video track (likely artwork), attempting to extract...")
+
+                        let imageGenerator = AVAssetImageGenerator(asset: asset)
+                        imageGenerator.appliesPreferredTrackTransform = true
+                        imageGenerator.maximumSize = CGSize(width: 500, height: 500)
+
+                        do {
+                            let cgImage = try imageGenerator.copyCGImage(at: CMTime.zero, actualTime: nil)
+                            let nsImage = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+
+                            if let tiffData = nsImage.tiffRepresentation,
+                               let bitmapRep = NSBitmapImageRep(data: tiffData),
+                               let jpegData = bitmapRep.representation(using: .jpeg, properties: [.compressionFactor: 0.8]) {
+                                extractedArtworkData = jpegData
+                                print("🎵 ✅ Successfully extracted artwork via AVFoundation: \(jpegData.count) bytes")
+                            }
+                        } catch {
+                            print("🎵 ❌ Failed to extract artwork via AVFoundation: \(error)")
+                        }
+                        break
+                    }
+                }
+            }
+        }
+
+        self.artworkData = extractedArtworkData
+        if extractedArtworkData != nil {
+            print("🎵 ✅ Artwork loaded successfully for: \(title)")
+        } else {
+            print("🎵 ❌ No artwork found for: \(title)")
+        }
+    }
+
+    /**
      * Gets the NSImage representation of the track's artwork with thread-safe caching.
      *
      * This property provides efficient access to artwork by:
+     * - Using artwork data loaded when track starts playing
      * - Caching NSImage instances to avoid repeated creation
      * - Using concurrent queues for thread-safe access
      * - Automatically handling data-to-image conversion

@@ -7,7 +7,6 @@
 //
 
 import SwiftUI
-import AppKit
 
 // MARK: - Content View
 
