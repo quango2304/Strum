@@ -47,18 +47,6 @@ struct StrumApp: App {
         .windowToolbarStyle(.unified)
         .defaultSize(width: 1200, height: 800)
         .commands {
-            CommandGroup(replacing: .newItem) {
-                Button("Import Files...") {
-                    // This will be handled by the ContentView
-                }
-                .keyboardShortcut("o", modifiers: .command)
-
-                Button("Import Folder...") {
-                    // This will be handled by the ContentView
-                }
-                .keyboardShortcut("o", modifiers: [.command, .shift])
-            }
-
             CommandGroup(replacing: .appInfo) {
                 Button("About Strum") {
                     preferencesManager.showAbout = true
@@ -70,24 +58,6 @@ struct StrumApp: App {
                     preferencesManager.showPreferences = true
                 }
                 .keyboardShortcut(",", modifiers: .command)
-            }
-
-            // Music Player Controls Menu
-            CommandMenu("Playback") {
-                Button("Play/Pause") {
-                    // This will be handled by the PlayerControlsView
-                }
-                .keyboardShortcut(.space, modifiers: [])
-
-                Button("Previous Track") {
-                    // This will be handled by the PlayerControlsView
-                }
-                .keyboardShortcut(.leftArrow, modifiers: .command)
-
-                Button("Next Track") {
-                    // This will be handled by the PlayerControlsView
-                }
-                .keyboardShortcut(.rightArrow, modifiers: .command)
             }
         }
     }

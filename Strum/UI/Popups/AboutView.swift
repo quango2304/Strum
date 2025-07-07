@@ -56,7 +56,7 @@ struct AboutView: View {
 
                     // Version and Author in same section
                     VStack(spacing: DesignSystem.Spacing.sm) {
-                        Text("Version 1.2")
+                        Text("Version 1.4")
                             .font(DesignSystem.Typography.body)
                             .foregroundColor(.secondary)
 
