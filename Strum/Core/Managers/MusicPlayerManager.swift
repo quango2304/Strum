@@ -222,6 +222,25 @@ class MusicPlayerManager: ObservableObject {
         // Clear Now Playing info
         clearNowPlayingInfo()
     }
+
+    /**
+     * Stops playback and clears all player state when reaching the end of a playlist.
+     *
+     * This method is called when the playlist ends and repeat mode is off.
+     * It clears the current track and playlist to indicate that playback has completed.
+     */
+    private func stopAndClearState() {
+        // Stop playback first
+        stop()
+
+        // Clear current track and playlist
+        currentTrack = nil
+        currentPlaylist = nil
+
+        // Reset shuffle state
+        shuffledIndices.removeAll()
+        currentShuffleIndex = 0
+    }
     
     /**
      * Seeks to a specific time position in the current track.
@@ -318,7 +337,9 @@ class MusicPlayerManager: ObservableObject {
                 if repeatMode == .playlist {
                     currentShuffleIndex = 0
                 } else {
-                    return // End of shuffled playlist
+                    // End of shuffled playlist - stop and clear state
+                    stopAndClearState()
+                    return
                 }
             }
             let nextIndex = shuffledIndices[currentShuffleIndex]
@@ -333,6 +354,10 @@ class MusicPlayerManager: ObservableObject {
                 nextTrack = playlist.tracks[nextIndex]
             } else if repeatMode == .playlist {
                 nextTrack = playlist.tracks.first
+            } else {
+                // End of playlist - stop and clear state
+                stopAndClearState()
+                return
             }
         }
 
@@ -368,7 +393,9 @@ class MusicPlayerManager: ObservableObject {
                 if repeatMode == .playlist {
                     currentShuffleIndex = shuffledIndices.count - 1
                 } else {
-                    return // Beginning of shuffled playlist
+                    // Beginning of shuffled playlist - stop and clear state
+                    stopAndClearState()
+                    return
                 }
             }
             let previousIndex = shuffledIndices[currentShuffleIndex]
@@ -383,6 +410,10 @@ class MusicPlayerManager: ObservableObject {
                 previousTrack = playlist.tracks[previousIndex]
             } else if repeatMode == .playlist {
                 previousTrack = playlist.tracks.last
+            } else {
+                // Beginning of playlist - stop and clear state
+                stopAndClearState()
+                return
             }
         }
 
