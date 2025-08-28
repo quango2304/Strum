@@ -66,13 +66,7 @@ struct TrackListView: View {
             .onDrop(of: [.fileURL], isTargeted: $isDragOver) { providers in
                 return handleDrop(providers: providers)
             }
-            .onAppear {
-                // Set up callback to clear search when switching playlists
-                playlistManager.onPlaylistSwitch = {
-                    searchText = ""
-                    isSearchFieldFocused = false
-                }
-            }
+
         }
     }
 
@@ -324,6 +318,14 @@ struct TrackListView: View {
         .contentShape(Rectangle())
         .onTapGesture {
             isSearchFieldFocused = false
+        }
+        .id(playlist.id) // Force List to recreate when playlist changes, resetting scroll position
+        .onAppear {
+            // Set up callback to clear search when switching playlists
+            playlistManager.onPlaylistSwitch = {
+                searchText = ""
+                isSearchFieldFocused = false
+            }
         }
     }
 
