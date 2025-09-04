@@ -142,7 +142,7 @@ struct TrackListView: View {
 
     @ViewBuilder
     private func trackListHeaderView(isCompact: Bool) -> some View {
-        HStack {
+        HStack(spacing: 12) {
             Text("#")
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -167,7 +167,7 @@ struct TrackListView: View {
                 Text("Quality")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                    .frame(width: 100, alignment: .leading)
+                    .frame(width: 100, alignment: .center)
             } else {
                 Text("Artist")
                     .font(.caption)
@@ -177,16 +177,16 @@ struct TrackListView: View {
                 Text("Quality")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                    .frame(width: 80, alignment: .leading)
+                    .frame(width: 80, alignment: .center)
             }
 
             Text("Duration")
                 .font(.caption)
                 .foregroundColor(.secondary)
-                .frame(width: 60, alignment: .trailing)
+                .frame(width: 60, alignment: .center)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 8)
+        .padding(.horizontal, DesignSystem.Spacing.xl + DesignSystem.Spacing.md)
+        .padding(.vertical, DesignSystem.Spacing.sm)
     }
 
     @ViewBuilder
@@ -303,7 +303,6 @@ struct TrackListView: View {
                     .listRowSeparator(.hidden) // Hide the dividers
                     .listRowInsets(EdgeInsets()) // Remove default List padding
             }
-            .onDelete(perform: handleDelete)
 
             // Add padding at the bottom to ensure last track is fully visible
             Color.clear
@@ -343,6 +342,14 @@ struct TrackListView: View {
                 searchText = ""
                 isSearchFieldFocused = false
                 musicPlayer.play(track: track, in: playlist)
+            },
+            onDelete: {
+                // Handle track deletion
+                if let originalIndex = playlist.tracks.firstIndex(where: { $0.id == track.id }) {
+                    playlist.removeTrack(at: originalIndex)
+                    // Save the playlists to persist the changes
+                    playlistManager.savePlaylists()
+                }
             },
             isSearchFieldFocused: $isSearchFieldFocused
         )
@@ -532,31 +539,20 @@ struct TrackRow: View {
     let colorTheme: ColorTheme
     let isCompact: Bool
     let onPlay: () -> Void
+    let onDelete: () -> Void
     @FocusState.Binding var isSearchFieldFocused: Bool
 
     @State private var isHovered = false
     
     var body: some View {
         HStack(spacing: 12) {
-            // Music note icon with round background
-            ZStack {
-                Circle()
-                    .fill(Color.secondary.opacity(0.15))
-                    .frame(width: 28, height: 28)
-
-                Image(systemName: "music.note")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .opacity(0.8)
-            }
-
-            // Track Number / Play Button
+            // Track Number / Delete Button
             ZStack {
                 if isHovered {
-                    Button(action: onPlay) {
-                        Image(systemName: "play.fill")
+                    Button(action: onDelete) {
+                        Image(systemName: "trash")
                             .font(.system(size: 12))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.red)
                     }
                     .buttonStyle(PlainButtonStyle())
                 } else if isPlaying {
@@ -599,7 +595,7 @@ struct TrackRow: View {
                 Text(track.qualityString)
                     .font(DesignSystem.Typography.trackSubtitle)
                     .lineLimit(1)
-                    .frame(width: 100, alignment: .leading)
+                    .frame(width: 100, alignment: .center)
                     .foregroundColor(.secondary)
             } else {
                 // Compact mode: Artist, Quality
@@ -612,14 +608,14 @@ struct TrackRow: View {
                 Text(track.qualityString)
                     .font(DesignSystem.Typography.trackSubtitle)
                     .lineLimit(1)
-                    .frame(width: 80, alignment: .leading)
+                    .frame(width: 80, alignment: .center)
                     .foregroundColor(.secondary)
             }
 
             // Duration
             Text(formatDuration(track.duration))
                 .font(DesignSystem.Typography.trackSubtitle)
-                .frame(width: 60, alignment: .trailing)
+                .frame(width: 60, alignment: .center)
                 .foregroundColor(.secondary)
         }
         .padding(.horizontal, DesignSystem.Spacing.xl)
